@@ -3,11 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Expediente Fisioterapia con Gemini IA</title>
+    <title>Sistema Clínico Privado</title>
     <style>
-        :root { --primary: #2c3e50; --accent: #27ae60; --bg: #f4f7f6; --blue: #3498db; --ai-purple: #8e44ad; }
-        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); margin: 0; padding: 20px; }
-        .container { max-width: 1200px; margin: auto; display: grid; grid-template-columns: 400px 1fr; gap: 20px; }
+        :root { --primary: #2c3e50; --accent: #27ae60; --bg: #f4f7f6; --blue: #3498db; --danger: #e74c3c; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        
+        /* Pantalla de Login */
+        #login-screen { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 300px; }
+        #login-screen h1 { font-size: 1.5rem; color: var(--primary); margin-bottom: 20px; }
+        #login-screen input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; text-align: center; font-size: 1.2rem; }
+        
+        /* Contenedor Principal (Oculto al inicio) */
+        #main-app { display: none; width: 100%; max-width: 1200px; margin: 20px; grid-template-columns: 400px 1fr; gap: 20px; align-items: start; }
         
         .panel { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         h2 { font-size: 1.1rem; color: var(--primary); margin: 0 0 15px 0; border-bottom: 2px solid #eee; padding-bottom: 8px; text-transform: uppercase; }
@@ -25,65 +32,83 @@
         .btn-tag:hover { background: #d6eaf8; }
         .btn-tag.long { grid-column: span 2; }
 
-        /* Botones de Acción */
-        .btn-save { width: 100%; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 10px; }
-        .btn-ai { width: 100%; background: var(--ai-purple); color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-ai:disabled { background: #bdc3c7; cursor: not-allowed; }
+        .btn-save { width: 100%; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; }
+        .btn-logout { background: var(--danger); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; float: right; }
 
-        /* Estilos de IA */
-        #ai-response { background: #fdf2ff; border: 1px dashed var(--ai-purple); padding: 15px; border-radius: 6px; margin-top: 15px; font-size: 0.9rem; color: #4b2c5e; display: none; line-height: 1.4; }
-
+        /* Lista de Pacientes */
         .paciente-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; border-radius: 4px; display: flex; flex-direction: column; }
         .paciente-item.active { background: var(--blue); color: white; }
-        .sesion-card { background: #fff; border-left: 5px solid var(--blue); padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .paciente-item .dni-small { font-size: 0.75rem; opacity: 0.8; }
+
+        /* Historial */
+        .sesion-card { background: #fff; border-left: 5px solid var(--blue); padding: 15px; margin-bottom: 15px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .sesion-header { display: flex; justify-content: space-between; font-size: 0.85rem; color: #95a5a6; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="panel">
-        <h2>🔑 Configuración AI</h2>
-        <input type="password" id="apiKey" placeholder="Pega aquí tu Gemini API Key" style="margin-bottom: 20px;">
+    <div id="login-screen">
+        <h1>🔐 Acceso Privado</h1>
+        <input type="password" id="passInput" placeholder="Contraseña">
+        <button class="btn-save" onclick="checkPass()">Entrar</button>
+        <p id="error-msg" style="color:red; font-size: 0.8rem; margin-top: 10px; display: none;">Contraseña incorrecta</p>
+    </div>
 
-        <h2>📝 Registro de Sesión</h2>
-        <label>DNI:</label>
-        <input type="text" id="dni" placeholder="Documento de identidad">
-        
-        <label>Nombre:</label>
-        <input type="text" id="paciente" placeholder="Nombre completo">
-        
-        <label>Tratamientos:</label>
-        <div class="quick-notes">
-            <div class="btn-tag" onclick="addNote('CHC')">CHC</div>
-            <div class="btn-tag" onclick="addNote('CF')">CF</div>
-            <div class="btn-tag" onclick="addNote('TENS')">TENS</div>
-            <div class="btn-tag" onclick="addNote('IF')">IF</div>
-            <div class="btn-tag" onclick="addNote('KOTZ')">KOTZ</div>
-            <div class="btn-tag" onclick="addNote('MG')">MG</div>
-            <div class="btn-tag" onclick="addNote('TC')">TC</div>
-            <div class="btn-tag" onclick="addNote('KINESIO')">KINESIO</div>
-            <div class="btn-tag long" onclick="addNote('Liberación de tejidos blandos')">Lib. Tejidos Blandos</div>
-            <div class="btn-tag long" onclick="addNote('Liberación de cicatriz')">Lib. Cicatriz</div>
+    <div id="main-app">
+        <div class="panel">
+            <button class="btn-logout" onclick="location.reload()">Cerrar Sesión</button>
+            <h2>📝 Nuevo Registro</h2>
+            
+            <label>DNI del Paciente:</label>
+            <input type="text" id="dni" placeholder="Documento de identidad">
+            
+            <label>Nombre Completo:</label>
+            <input type="text" id="paciente" placeholder="Nombre y Apellidos">
+            
+            <label>Tratamientos Rápidos:</label>
+            <div class="quick-notes">
+                <div class="btn-tag" onclick="addNote('CHC')">CHC</div>
+                <div class="btn-tag" onclick="addNote('CF')">CF</div>
+                <div class="btn-tag" onclick="addNote('TENS')">TENS</div>
+                <div class="btn-tag" onclick="addNote('IF')">IF</div>
+                <div class="btn-tag" onclick="addNote('KOTZ')">KOTZ</div>
+                <div class="btn-tag" onclick="addNote('MG')">MG</div>
+                <div class="btn-tag" onclick="addNote('TC')">TC</div>
+                <div class="btn-tag" onclick="addNote('KINESIO')">KINESIO</div>
+                <div class="btn-tag long" onclick="addNote('Liberación de tejidos blandos')">Lib. Tejidos Blandos</div>
+                <div class="btn-tag long" onclick="addNote('Liberación de cicatriz')">Lib. Cicatriz</div>
+            </div>
+            
+            <textarea id="notas" rows="4" placeholder="Notas adicionales de la sesión..."></textarea>
+            <button class="btn-save" onclick="agregarSesion()">GUARDAR SESIÓN</button>
+
+            <h2 style="margin-top: 30px;">👥 Mis Pacientes</h2>
+            <div id="listaPacientes"></div>
         </div>
-        <textarea id="notas" rows="4" placeholder="Escriba notas adicionales..."></textarea>
-        
-        <button class="btn-ai" id="aiBtn" onclick="consultarGemini()">✨ Consultar con Gemini AI</button>
-        <div id="ai-response"></div>
-        <br>
-        <button class="btn-save" onclick="agregarSesion()">💾 GUARDAR SESIÓN</button>
 
-        <h2 style="margin-top: 30px;">👥 Mis Pacientes</h2>
-        <div id="listaPacientes"></div>
+        <div class="panel">
+            <h2 id="tituloHistorial">Ficha Clínica</h2>
+            <div id="contenedorHistorial">
+                <p style="text-align: center; color: #bdc3c7; margin-top: 50px;">Seleccione un paciente para ver su historial.</p>
+            </div>
+        </div>
     </div>
-
-    <div class="panel">
-        <h2 id="tituloHistorial">Ficha del Paciente</h2>
-        <div id="contenedorHistorial"></div>
-    </div>
-</div>
 
 <script>
+    const CLAVE_CORRECTA = "1234"; // <--- CAMBIA TU CLAVE AQUÍ
     let pacienteSeleccionado = null;
+
+    function checkPass() {
+        const input = document.getElementById('passInput').value;
+        if (input === CLAVE_CORRECTA) {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'grid';
+            document.body.style.alignItems = 'start';
+            actualizarInterfaz();
+        } else {
+            document.getElementById('error-msg').style.display = 'block';
+        }
+    }
 
     function addNote(text) {
         const area = document.getElementById('notas');
@@ -91,86 +116,45 @@
         area.focus();
     }
 
-    async function consultarGemini() {
-        const key = document.getElementById('apiKey').value;
-        const notas = document.getElementById('notas').value;
-        const respDiv = document.getElementById('ai-response');
-        const btn = document.getElementById('aiBtn');
-
-        if (!key) return alert("Por favor, ingresa tu API KEY de Gemini.");
-        if (!notas) return alert("Escribe algo en las notas para que la IA pueda ayudarte.");
-
-        btn.disabled = true;
-        btn.innerText = "Pensando...";
-        respDiv.style.display = "block";
-        respDiv.innerText = "Cargando sugerencia clínica...";
-
-        try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: `Eres un asistente experto en fisioterapia. Basado en estos tratamientos/notas: "${notas}", brinda un breve resumen profesional, posibles beneficios esperados y una recomendación para la siguiente sesión. Sé conciso.` }] }]
-                })
-            });
-
-            const data = await response.json();
-            const aiText = data.candidates[0].content.parts[0].text;
-            respDiv.innerText = aiText;
-        } catch (error) {
-            respDiv.innerText = "Error al conectar con Gemini. Revisa tu API Key.";
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "✨ Consultar con Gemini AI";
-        }
-    }
-
     function agregarSesion() {
         const dni = document.getElementById('dni').value.trim();
         const nombre = document.getElementById('paciente').value.trim();
         const notas = document.getElementById('notas').value.trim();
-        const aiSugerencia = document.getElementById('ai-response').innerText;
         
-        if (!dni || !nombre || !notas) return alert('Faltan datos.');
+        if (!dni || !nombre || !notas) return alert('Complete DNI, Nombre y Notas.');
 
         const ahora = new Date();
         const fechaAuto = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-
-        // Guardamos las notas + la sugerencia de la IA si existe
-        const notasFinales = aiSugerencia && aiSugerencia !== "Cargando sugerencia clínica..." 
-            ? `${notas}\n\n--- Sugerencia IA ---\n${aiSugerencia}` 
-            : notas;
 
         const nuevaSesion = {
             id: Date.now(),
             dni: dni,
             paciente: nombre,
             fecha: fechaAuto,
-            notas: notasFinales
+            notas: notas
         };
 
-        let sesiones = JSON.parse(localStorage.getItem('fisioterapia_ai_v1')) || [];
+        let sesiones = JSON.parse(localStorage.getItem('fisioterapia_privada')) || [];
         sesiones.push(nuevaSesion);
-        localStorage.setItem('fisioterapia_ai_v1', JSON.stringify(sesiones));
+        localStorage.setItem('fisioterapia_privada', JSON.stringify(sesiones));
 
         document.getElementById('notas').value = '';
-        document.getElementById('ai-response').style.display = 'none';
         actualizarInterfaz();
         verHistorial(dni);
     }
 
-    // (Funciones de historial y borrado idénticas a la versión anterior)
     function actualizarInterfaz() {
         const listaDiv = document.getElementById('listaPacientes');
-        const sesiones = JSON.parse(localStorage.getItem('fisioterapia_ai_v1')) || [];
+        const sesiones = JSON.parse(localStorage.getItem('fisioterapia_privada')) || [];
         const mapaPacientes = {};
         sesiones.forEach(s => mapaPacientes[s.dni] = s.paciente);
+
         listaDiv.innerHTML = '';
         Object.keys(mapaPacientes).sort().forEach(dni => {
             const div = document.createElement('div');
             div.className = `paciente-item ${pacienteSeleccionado === dni ? 'active' : ''}`;
             div.onclick = () => verHistorial(dni);
-            div.innerHTML = `<strong>${mapaPacientes[dni]}</strong><span style="font-size:0.7rem">DNI: ${dni}</span>`;
+            div.innerHTML = `<strong>${mapaPacientes[dni]}</strong><span class="dni-small">DNI: ${dni}</span>`;
             listaDiv.appendChild(div);
         });
     }
@@ -179,17 +163,32 @@
         pacienteSeleccionado = dni;
         actualizarInterfaz();
         const contenedor = document.getElementById('contenedorHistorial');
-        const sesiones = JSON.parse(localStorage.getItem('fisioterapia_ai_v1')) || [];
+        const sesiones = JSON.parse(localStorage.getItem('fisioterapia_privada')) || [];
         const filtradas = sesiones.filter(s => s.dni === dni).reverse();
-        if(filtradas.length === 0) return;
-        document.getElementById('tituloHistorial').innerHTML = `Historial: ${filtradas[0].paciente}`;
+        
+        document.getElementById('tituloHistorial').innerHTML = `Historial: ${filtradas[0].paciente} (DNI: ${dni})`;
         contenedor.innerHTML = '';
+
         filtradas.forEach(s => {
             const card = document.createElement('div');
             card.className = 'sesion-card';
-            card.innerHTML = `<div>📅 ${s.fecha}</div><div style="white-space: pre-wrap; margin-top:10px;">${s.notas}</div>`;
+            card.innerHTML = `<div class="sesion-header">📅 ${s.fecha} <button style="color:red; border:none; background:none; cursor:pointer" onclick="borrarSesion(${s.id}, '${s.dni}')">Eliminar</button></div><div style="white-space: pre-wrap;">${s.notas}</div>`;
             contenedor.appendChild(card);
         });
+    }
+
+    function borrarSesion(id, dni) {
+        if(confirm('¿Eliminar registro?')) {
+            let sesiones = JSON.parse(localStorage.getItem('fisioterapia_privada'));
+            sesiones = sesiones.filter(s => s.id !== id);
+            localStorage.setItem('fisioterapia_privada', JSON.stringify(sesiones));
+            if (!sesiones.some(s => s.dni === dni)) {
+                pacienteSeleccionado = null;
+                location.reload(); 
+            } else {
+                verHistorial(dni);
+            }
+        }
     }
 </script>
 </body>
