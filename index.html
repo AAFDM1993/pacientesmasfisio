@@ -53,13 +53,10 @@
 </div>
 
 <script>
-    // 1. PEGA AQUÍ TU URL DE GOOGLE APPS SCRIPT
-    const URL_WEB_APP = "https://script.google.com/macros/s/AKfycbwMybXVRUxc0Cpv-bEZAVZ6_fJXVX2cUnp2Yr_tVlegzSt4oA7l01R1ZU-wJ-HnAnhT2Q/exec"; 
-    
+    const URL_WEB_APP = "https://script.google.com/macros/s/AKfycbzE7heHqEeTY6iqsPsKCsD28tOoXJk0WEY9cLqc8i2WwELFcBCv7SphKBJza0sdTGwB0Q/exec"; 
     let todasLasSesiones = [];
     let pacienteSeleccionado = null;
 
-    // Cargar datos al abrir la página
     window.onload = cargarDatosDesdeNube;
 
     function addNote(text) {
@@ -73,9 +70,8 @@
             const response = await fetch(URL_WEB_APP);
             todasLasSesiones = await response.json();
             actualizarListaPacientes();
-        } catch (e) {
-            alert("Error al cargar datos");
-        }
+            if(pacienteSeleccionado) verHistorial(pacienteSeleccionado);
+        } catch (e) { console.error(e); }
         document.getElementById('loading-overlay').style.display = 'none';
     }
 
@@ -83,50 +79,47 @@
         const dni = document.getElementById('dni').value.trim();
         const nombre = document.getElementById('paciente').value.trim();
         const notas = document.getElementById('notas').value.trim();
-
         if (!dni || !nombre || !notas) return alert("Faltan datos");
 
-        const btn = document.getElementById('btnGuardar');
-        btn.disabled = true;
-        btn.innerText = "Enviando...";
+        const datos = { action: 'save', id: Date.now(), dni, paciente: nombre, fecha: new Date().toLocaleString(), notas };
+        await ejecutarAccionCloud(datos);
+        document.getElementById('notas').value = '';
+        cargarDatosDesdeNube();
+    }
 
-        const datos = {
-            action: 'save',
-            id: Date.now(),
-            dni: dni,
-            paciente: nombre,
-            fecha: new Date().toLocaleString(),
-            notas: notas
-        };
+    async function eliminarSesion(id) {
+        if (!confirm("¿Eliminar esta nota permanentemente?")) return;
+        await ejecutarAccionCloud({ action: 'delete_session', id: id });
+        cargarDatosDesdeNube();
+    }
 
+    async function eliminarPaciente(dni) {
+        if (!confirm("¿Eliminar TODA la ficha y sesiones de este paciente? Esta acción no se puede deshacer.")) return;
+        await ejecutarAccionCloud({ action: 'delete_patient', dni: dni });
+        pacienteSeleccionado = null;
+        document.getElementById('contenedorHistorial').innerHTML = "Paciente eliminado.";
+        cargarDatosDesdeNube();
+    }
+
+    async function ejecutarAccionCloud(cuerpo) {
+        document.getElementById('loading-overlay').style.display = 'flex';
         try {
             await fetch(URL_WEB_APP, {
                 method: 'POST',
                 mode: 'no-cors',
-                body: JSON.stringify(datos)
+                body: JSON.stringify(cuerpo)
             });
-            
-            // Limpiar y recargar
-            document.getElementById('notas').value = '';
-            await cargarDatosDesdeNube();
-            verHistorial(dni);
-        } catch (e) {
-            alert("Error al guardar");
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "GUARDAR EN LA NUBE";
-        }
+        } catch (e) { alert("Error de conexión"); }
     }
 
     function actualizarListaPacientes() {
         const listaDiv = document.getElementById('listaPacientes');
         const mapa = {};
         todasLasSesiones.forEach(s => mapa[s.dni] = s.paciente);
-        
         listaDiv.innerHTML = '';
         Object.keys(mapa).forEach(dni => {
             const div = document.createElement('div');
-            div.className = `paciente-item ${dni === pacienteSeleccionado ? 'active' : ''}`;
+            div.className = `paciente-item ${String(dni) === String(pacienteSeleccionado) ? 'active' : ''}`;
             div.onclick = () => verHistorial(dni);
             div.innerHTML = `<strong>${mapa[dni]}</strong><br><small>DNI: ${dni}</small>`;
             listaDiv.appendChild(div);
@@ -138,16 +131,30 @@
         actualizarListaPacientes();
         const filtradas = todasLasSesiones.filter(s => String(s.dni) === String(dni)).reverse();
         
-        document.getElementById('tituloHistorial').innerText = `Historial: ${filtradas[0].paciente}`;
+        if (filtradas.length === 0) {
+            document.getElementById('contenedorHistorial').innerHTML = "No hay registros.";
+            return;
+        }
+
+        const nombreP = filtradas[0].paciente;
+        document.getElementById('tituloHistorial').innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span>Historial: ${nombreP}</span>
+                <button onclick="eliminarPaciente('${dni}')" style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:0.7rem;">ELIMINAR PACIENTE</button>
+            </div>`;
+
         const contenedor = document.getElementById('contenedorHistorial');
         contenedor.innerHTML = filtradas.map(s => `
             <div class="sesion-card">
-                <div style="color:#95a5a6; font-size:0.8rem">📅 ${s.fecha}</div>
-                <p style="white-space: pre-wrap;">${s.notas}</p>
+                <div style="display:flex; justify-content:space-between; color:#95a5a6; font-size:0.8rem">
+                    <span>📅 ${s.fecha}</span>
+                    <span onclick="eliminarSesion('${s.id}')" style="color:#e74c3c; cursor:pointer;">✖ Eliminar nota</span>
+                </div>
+                <p style="white-space: pre-wrap; margin-top:10px;">${s.notas}</p>
             </div>
         `).join('');
     }
-</script>
-</body>
+</script></body>
 </html>
+
 
