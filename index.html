@@ -3,124 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema Clínico con Respaldo</title>
+    <title>Sistema Clínico Cloud</title>
     <style>
-        :root { --primary: #2c3e50; --accent: #27ae60; --bg: #f4f7f6; --blue: #3498db; --danger: #e74c3c; }
-        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-        
-        #login-screen { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 300px; }
-        #main-app { display: none; width: 100%; max-width: 1200px; margin: 20px; grid-template-columns: 400px 1fr; gap: 20px; align-items: start; }
-        
-        .panel { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; }
-        h2 { font-size: 1.1rem; color: var(--primary); margin: 0 0 15px 0; border-bottom: 2px solid #eee; padding-bottom: 8px; text-transform: uppercase; }
-
-        label { font-size: 0.85rem; font-weight: bold; color: #7f8c8d; }
+        :root { --primary: #2c3e50; --accent: #27ae60; --bg: #f4f7f6; --blue: #3498db; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); margin: 0; padding: 20px; }
+        .container { max-width: 1100px; margin: auto; display: grid; grid-template-columns: 380px 1fr; gap: 20px; }
+        .panel { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h2 { font-size: 1.1rem; color: var(--primary); margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 8px; }
         input, textarea { width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-        
         .quick-notes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; }
         .btn-tag { background: #ebf5fb; border: 1px solid #d6eaf8; color: #2980b9; padding: 8px 4px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; font-weight: bold; text-align: center; }
-        .btn-tag.long { grid-column: span 2; }
-
         .btn-save { width: 100%; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .btn-backup { background: #95a5a6; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; margin-top: 10px; width: 48%; }
-        
         .paciente-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; }
         .paciente-item.active { background: var(--blue); color: white; border-radius: 6px; }
-        
         .sesion-card { background: #fff; border-left: 5px solid var(--blue); padding: 15px; margin-bottom: 15px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .sesion-header { display: flex; justify-content: space-between; font-size: 0.85rem; color: #95a5a6; }
+        #loading-overlay { display:none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); z-index:100; justify-content:center; align-items:center; font-weight:bold; }
     </style>
 </head>
 <body>
 
-    <div id="login-screen">
-        <h1>🔐 Acceso</h1>
-        <input type="password" id="passInput" placeholder="Contraseña">
-        <button class="btn-save" onclick="checkPass()">Entrar</button>
+<div id="loading-overlay">Sincronizando con la nube...</div>
+
+<div class="container">
+    <div class="panel">
+        <h2>📝 Nuevo Registro</h2>
+        <label>DNI:</label> <input type="text" id="dni">
+        <label>Nombre:</label> <input type="text" id="paciente">
+        <label>Tratamientos:</label>
+        <div class="quick-notes">
+            <div class="btn-tag" onclick="addNote('CHC')">CHC</div>
+            <div class="btn-tag" onclick="addNote('CF')">CF</div>
+            <div class="btn-tag" onclick="addNote('TENS')">TENS</div>
+            <div class="btn-tag" onclick="addNote('IF')">IF</div>
+            <div class="btn-tag" onclick="addNote('KOTZ')">KOTZ</div>
+            <div class="btn-tag" onclick="addNote('MG')">MG</div>
+            <div class="btn-tag" onclick="addNote('TC')">TC</div>
+            <div class="btn-tag" onclick="addNote('KINESIO')">KINESIO</div>
+        </div>
+        <textarea id="notas" rows="4"></textarea>
+        <button class="btn-save" id="btnGuardar" onclick="agregarSesion()">GUARDAR EN LA NUBE</button>
+        <h2 style="margin-top: 30px;">👥 Pacientes</h2>
+        <div id="listaPacientes">Cargando...</div>
     </div>
 
-    <div id="main-app">
-        <div class="panel">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-                <button onclick="exportarDatos()" class="btn-backup">📥 Exportar Backup</button>
-                <button onclick="document.getElementById('importFile').click()" class="btn-backup">📤 Importar Backup</button>
-                <input type="file" id="importFile" style="display:none" onchange="importarDatos(event)">
-            </div>
-
-            <h2>📝 Registro</h2>
-            <label>DNI:</label> <input type="text" id="dni">
-            <label>Nombre:</label> <input type="text" id="paciente">
-            
-            <label>Tratamientos:</label>
-            <div class="quick-notes">
-                <div class="btn-tag" onclick="addNote('CHC')">CHC</div>
-                <div class="btn-tag" onclick="addNote('CF')">CF</div>
-                <div class="btn-tag" onclick="addNote('TENS')">TENS</div>
-                <div class="btn-tag" onclick="addNote('IF')">IF</div>
-                <div class="btn-tag" onclick="addNote('KOTZ')">KOTZ</div>
-                <div class="btn-tag" onclick="addNote('MG')">MG</div>
-                <div class="btn-tag" onclick="addNote('TC')">TC</div>
-                <div class="btn-tag" onclick="addNote('KINESIO')">KINESIO</div>
-                <div class="btn-tag long" onclick="addNote('Liberación de tejidos blandos')">Lib. Tejidos Blandos</div>
-                <div class="btn-tag long" onclick="addNote('Liberación de cicatriz')">Lib. Cicatriz</div>
-            </div>
-            
-            <textarea id="notas" rows="4"></textarea>
-            <button class="btn-save" onclick="agregarSesion()">GUARDAR SESIÓN</button>
-
-            <h2 style="margin-top: 30px;">👥 Pacientes</h2>
-            <div id="listaPacientes"></div>
-        </div>
-
-        <div class="panel">
-            <h2 id="tituloHistorial">Historial Clínico</h2>
-            <div id="contenedorHistorial"></div>
-        </div>
+    <div class="panel">
+        <h2 id="tituloHistorial">Historial Clínico</h2>
+        <div id="contenedorHistorial">Seleccione un paciente.</div>
     </div>
+</div>
 
 <script>
-    const CLAVE = "1234";
-    const DB_NAME = "fisioterapia_db_v4";
+    // 1. PEGA AQUÍ TU URL DE GOOGLE APPS SCRIPT
+    const URL_WEB_APP = "https://script.google.com/macros/s/AKfycbwMybXVRUxc0Cpv-bEZAVZ6_fJXVX2cUnp2Yr_tVlegzSt4oA7l01R1ZU-wJ-HnAnhT2Q/exec"; 
+    
+    let todasLasSesiones = [];
+    let pacienteSeleccionado = null;
 
-    function checkPass() {
-        if (document.getElementById('passInput').value === CLAVE) {
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('main-app').style.display = 'grid';
-            actualizarInterfaz();
-        }
-    }
+    // Cargar datos al abrir la página
+    window.onload = cargarDatosDesdeNube;
 
     function addNote(text) {
         const area = document.getElementById('notas');
         area.value += (area.value ? ', ' : '') + text;
-        area.focus();
     }
 
-    function agregarSesion() {
+    async function cargarDatosDesdeNube() {
+        document.getElementById('loading-overlay').style.display = 'flex';
+        try {
+            const response = await fetch(URL_WEB_APP);
+            todasLasSesiones = await response.json();
+            actualizarListaPacientes();
+        } catch (e) {
+            alert("Error al cargar datos");
+        }
+        document.getElementById('loading-overlay').style.display = 'none';
+    }
+
+    async function agregarSesion() {
         const dni = document.getElementById('dni').value.trim();
         const nombre = document.getElementById('paciente').value.trim();
         const notas = document.getElementById('notas').value.trim();
-        if (!dni || !nombre || !notas) return alert('Faltan datos');
 
-        const sesiones = JSON.parse(localStorage.getItem(DB_NAME)) || [];
-        sesiones.push({ id: Date.now(), dni, paciente: nombre, fecha: new Date().toLocaleString(), notas });
-        localStorage.setItem(DB_NAME, JSON.stringify(sesiones));
-        
-        document.getElementById('notas').value = '';
-        actualizarInterfaz();
-        verHistorial(dni);
+        if (!dni || !nombre || !notas) return alert("Faltan datos");
+
+        const btn = document.getElementById('btnGuardar');
+        btn.disabled = true;
+        btn.innerText = "Enviando...";
+
+        const datos = {
+            action: 'save',
+            id: Date.now(),
+            dni: dni,
+            paciente: nombre,
+            fecha: new Date().toLocaleString(),
+            notas: notas
+        };
+
+        try {
+            await fetch(URL_WEB_APP, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify(datos)
+            });
+            
+            // Limpiar y recargar
+            document.getElementById('notas').value = '';
+            await cargarDatosDesdeNube();
+            verHistorial(dni);
+        } catch (e) {
+            alert("Error al guardar");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "GUARDAR EN LA NUBE";
+        }
     }
 
-    function actualizarInterfaz() {
+    function actualizarListaPacientes() {
         const listaDiv = document.getElementById('listaPacientes');
-        const sesiones = JSON.parse(localStorage.getItem(DB_NAME)) || [];
         const mapa = {};
-        sesiones.forEach(s => mapa[s.dni] = s.paciente);
+        todasLasSesiones.forEach(s => mapa[s.dni] = s.paciente);
         
         listaDiv.innerHTML = '';
         Object.keys(mapa).forEach(dni => {
             const div = document.createElement('div');
-            div.className = `paciente-item ${dni === window.lastDni ? 'active' : ''}`;
+            div.className = `paciente-item ${dni === pacienteSeleccionado ? 'active' : ''}`;
             div.onclick = () => verHistorial(dni);
             div.innerHTML = `<strong>${mapa[dni]}</strong><br><small>DNI: ${dni}</small>`;
             listaDiv.appendChild(div);
@@ -128,48 +134,18 @@
     }
 
     function verHistorial(dni) {
-        window.lastDni = dni;
-        actualizarInterfaz();
-        const sesiones = JSON.parse(localStorage.getItem(DB_NAME)) || [];
-        const filtradas = sesiones.filter(s => s.dni === dni).reverse();
+        pacienteSeleccionado = dni;
+        actualizarListaPacientes();
+        const filtradas = todasLasSesiones.filter(s => String(s.dni) === String(dni)).reverse();
+        
         document.getElementById('tituloHistorial').innerText = `Historial: ${filtradas[0].paciente}`;
         const contenedor = document.getElementById('contenedorHistorial');
         contenedor.innerHTML = filtradas.map(s => `
             <div class="sesion-card">
-                <div class="sesion-header"><span>📅 ${s.fecha}</span></div>
-                <p>${s.notas}</p>
+                <div style="color:#95a5a6; font-size:0.8rem">📅 ${s.fecha}</div>
+                <p style="white-space: pre-wrap;">${s.notas}</p>
             </div>
         `).join('');
-    }
-
-    // --- FUNCIONES DE RESPALDO EXTERNO ---
-    function exportarDatos() {
-        const datos = localStorage.getItem(DB_NAME);
-        if (!datos) return alert("No hay datos para exportar");
-        const blob = new Blob([datos], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `backup_clinica_${new Date().toLocaleDateString()}.json`;
-        a.click();
-    }
-
-    function importarDatos(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const contenido = e.target.result;
-                JSON.parse(contenido); // Validar que sea JSON
-                localStorage.setItem(DB_NAME, contenido);
-                alert("Datos importados con éxito");
-                actualizarInterfaz();
-            } catch (err) {
-                alert("Archivo no válido");
-            }
-        };
-        reader.readAsText(file);
     }
 </script>
 </body>
