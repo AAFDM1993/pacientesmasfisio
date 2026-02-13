@@ -3,69 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema Clínico Privado</title>
+    <title>Sistema Clínico con Respaldo</title>
     <style>
         :root { --primary: #2c3e50; --accent: #27ae60; --bg: #f4f7f6; --blue: #3498db; --danger: #e74c3c; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
         
-        /* Pantalla de Login */
         #login-screen { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 300px; }
-        #login-screen h1 { font-size: 1.5rem; color: var(--primary); margin-bottom: 20px; }
-        #login-screen input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; text-align: center; font-size: 1.2rem; }
-        
-        /* Contenedor Principal (Oculto al inicio) */
         #main-app { display: none; width: 100%; max-width: 1200px; margin: 20px; grid-template-columns: 400px 1fr; gap: 20px; align-items: start; }
         
-        .panel { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .panel { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; }
         h2 { font-size: 1.1rem; color: var(--primary); margin: 0 0 15px 0; border-bottom: 2px solid #eee; padding-bottom: 8px; text-transform: uppercase; }
 
         label { font-size: 0.85rem; font-weight: bold; color: #7f8c8d; }
         input, textarea { width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
         
-        /* Menú de Notas Rápidas */
         .quick-notes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; }
-        .btn-tag { 
-            background: #ebf5fb; border: 1px solid #d6eaf8; color: #2980b9; padding: 8px 4px; 
-            border-radius: 4px; font-size: 0.7rem; cursor: pointer; font-weight: bold; text-align: center;
-            display: flex; align-items: center; justify-content: center; min-height: 40px;
-        }
-        .btn-tag:hover { background: #d6eaf8; }
+        .btn-tag { background: #ebf5fb; border: 1px solid #d6eaf8; color: #2980b9; padding: 8px 4px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; font-weight: bold; text-align: center; }
         .btn-tag.long { grid-column: span 2; }
 
-        .btn-save { width: 100%; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; }
-        .btn-logout { background: var(--danger); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; float: right; }
-
-        /* Lista de Pacientes */
-        .paciente-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; border-radius: 4px; display: flex; flex-direction: column; }
-        .paciente-item.active { background: var(--blue); color: white; }
-        .paciente-item .dni-small { font-size: 0.75rem; opacity: 0.8; }
-
-        /* Historial */
+        .btn-save { width: 100%; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-backup { background: #95a5a6; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; margin-top: 10px; width: 48%; }
+        
+        .paciente-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; }
+        .paciente-item.active { background: var(--blue); color: white; border-radius: 6px; }
+        
         .sesion-card { background: #fff; border-left: 5px solid var(--blue); padding: 15px; margin-bottom: 15px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .sesion-header { display: flex; justify-content: space-between; font-size: 0.85rem; color: #95a5a6; margin-bottom: 10px; }
+        .sesion-header { display: flex; justify-content: space-between; font-size: 0.85rem; color: #95a5a6; }
     </style>
 </head>
 <body>
 
     <div id="login-screen">
-        <h1>🔐 Acceso Privado</h1>
+        <h1>🔐 Acceso</h1>
         <input type="password" id="passInput" placeholder="Contraseña">
         <button class="btn-save" onclick="checkPass()">Entrar</button>
-        <p id="error-msg" style="color:red; font-size: 0.8rem; margin-top: 10px; display: none;">Contraseña incorrecta</p>
     </div>
 
     <div id="main-app">
         <div class="panel">
-            <button class="btn-logout" onclick="location.reload()">Cerrar Sesión</button>
-            <h2>📝 Nuevo Registro</h2>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                <button onclick="exportarDatos()" class="btn-backup">📥 Exportar Backup</button>
+                <button onclick="document.getElementById('importFile').click()" class="btn-backup">📤 Importar Backup</button>
+                <input type="file" id="importFile" style="display:none" onchange="importarDatos(event)">
+            </div>
+
+            <h2>📝 Registro</h2>
+            <label>DNI:</label> <input type="text" id="dni">
+            <label>Nombre:</label> <input type="text" id="paciente">
             
-            <label>DNI del Paciente:</label>
-            <input type="text" id="dni" placeholder="Documento de identidad">
-            
-            <label>Nombre Completo:</label>
-            <input type="text" id="paciente" placeholder="Nombre y Apellidos">
-            
-            <label>Tratamientos Rápidos:</label>
+            <label>Tratamientos:</label>
             <div class="quick-notes">
                 <div class="btn-tag" onclick="addNote('CHC')">CHC</div>
                 <div class="btn-tag" onclick="addNote('CF')">CF</div>
@@ -79,34 +65,28 @@
                 <div class="btn-tag long" onclick="addNote('Liberación de cicatriz')">Lib. Cicatriz</div>
             </div>
             
-            <textarea id="notas" rows="4" placeholder="Notas adicionales de la sesión..."></textarea>
+            <textarea id="notas" rows="4"></textarea>
             <button class="btn-save" onclick="agregarSesion()">GUARDAR SESIÓN</button>
 
-            <h2 style="margin-top: 30px;">👥 Mis Pacientes</h2>
+            <h2 style="margin-top: 30px;">👥 Pacientes</h2>
             <div id="listaPacientes"></div>
         </div>
 
         <div class="panel">
-            <h2 id="tituloHistorial">Ficha Clínica</h2>
-            <div id="contenedorHistorial">
-                <p style="text-align: center; color: #bdc3c7; margin-top: 50px;">Seleccione un paciente para ver su historial.</p>
-            </div>
+            <h2 id="tituloHistorial">Historial Clínico</h2>
+            <div id="contenedorHistorial"></div>
         </div>
     </div>
 
 <script>
-    const CLAVE_CORRECTA = "1234"; // <--- CAMBIA TU CLAVE AQUÍ
-    let pacienteSeleccionado = null;
+    const CLAVE = "1234";
+    const DB_NAME = "fisioterapia_db_v4";
 
     function checkPass() {
-        const input = document.getElementById('passInput').value;
-        if (input === CLAVE_CORRECTA) {
+        if (document.getElementById('passInput').value === CLAVE) {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'grid';
-            document.body.style.alignItems = 'start';
             actualizarInterfaz();
-        } else {
-            document.getElementById('error-msg').style.display = 'block';
         }
     }
 
@@ -120,24 +100,12 @@
         const dni = document.getElementById('dni').value.trim();
         const nombre = document.getElementById('paciente').value.trim();
         const notas = document.getElementById('notas').value.trim();
+        if (!dni || !nombre || !notas) return alert('Faltan datos');
+
+        const sesiones = JSON.parse(localStorage.getItem(DB_NAME)) || [];
+        sesiones.push({ id: Date.now(), dni, paciente: nombre, fecha: new Date().toLocaleString(), notas });
+        localStorage.setItem(DB_NAME, JSON.stringify(sesiones));
         
-        if (!dni || !nombre || !notas) return alert('Complete DNI, Nombre y Notas.');
-
-        const ahora = new Date();
-        const fechaAuto = ahora.toLocaleDateString() + ' ' + ahora.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-
-        const nuevaSesion = {
-            id: Date.now(),
-            dni: dni,
-            paciente: nombre,
-            fecha: fechaAuto,
-            notas: notas
-        };
-
-        let sesiones = JSON.parse(localStorage.getItem('fisioterapia_privada')) || [];
-        sesiones.push(nuevaSesion);
-        localStorage.setItem('fisioterapia_privada', JSON.stringify(sesiones));
-
         document.getElementById('notas').value = '';
         actualizarInterfaz();
         verHistorial(dni);
@@ -145,50 +113,63 @@
 
     function actualizarInterfaz() {
         const listaDiv = document.getElementById('listaPacientes');
-        const sesiones = JSON.parse(localStorage.getItem('fisioterapia_privada')) || [];
-        const mapaPacientes = {};
-        sesiones.forEach(s => mapaPacientes[s.dni] = s.paciente);
-
+        const sesiones = JSON.parse(localStorage.getItem(DB_NAME)) || [];
+        const mapa = {};
+        sesiones.forEach(s => mapa[s.dni] = s.paciente);
+        
         listaDiv.innerHTML = '';
-        Object.keys(mapaPacientes).sort().forEach(dni => {
+        Object.keys(mapa).forEach(dni => {
             const div = document.createElement('div');
-            div.className = `paciente-item ${pacienteSeleccionado === dni ? 'active' : ''}`;
+            div.className = `paciente-item ${dni === window.lastDni ? 'active' : ''}`;
             div.onclick = () => verHistorial(dni);
-            div.innerHTML = `<strong>${mapaPacientes[dni]}</strong><span class="dni-small">DNI: ${dni}</span>`;
+            div.innerHTML = `<strong>${mapa[dni]}</strong><br><small>DNI: ${dni}</small>`;
             listaDiv.appendChild(div);
         });
     }
 
     function verHistorial(dni) {
-        pacienteSeleccionado = dni;
+        window.lastDni = dni;
         actualizarInterfaz();
-        const contenedor = document.getElementById('contenedorHistorial');
-        const sesiones = JSON.parse(localStorage.getItem('fisioterapia_privada')) || [];
+        const sesiones = JSON.parse(localStorage.getItem(DB_NAME)) || [];
         const filtradas = sesiones.filter(s => s.dni === dni).reverse();
-        
-        document.getElementById('tituloHistorial').innerHTML = `Historial: ${filtradas[0].paciente} (DNI: ${dni})`;
-        contenedor.innerHTML = '';
-
-        filtradas.forEach(s => {
-            const card = document.createElement('div');
-            card.className = 'sesion-card';
-            card.innerHTML = `<div class="sesion-header">📅 ${s.fecha} <button style="color:red; border:none; background:none; cursor:pointer" onclick="borrarSesion(${s.id}, '${s.dni}')">Eliminar</button></div><div style="white-space: pre-wrap;">${s.notas}</div>`;
-            contenedor.appendChild(card);
-        });
+        document.getElementById('tituloHistorial').innerText = `Historial: ${filtradas[0].paciente}`;
+        const contenedor = document.getElementById('contenedorHistorial');
+        contenedor.innerHTML = filtradas.map(s => `
+            <div class="sesion-card">
+                <div class="sesion-header"><span>📅 ${s.fecha}</span></div>
+                <p>${s.notas}</p>
+            </div>
+        `).join('');
     }
 
-    function borrarSesion(id, dni) {
-        if(confirm('¿Eliminar registro?')) {
-            let sesiones = JSON.parse(localStorage.getItem('fisioterapia_privada'));
-            sesiones = sesiones.filter(s => s.id !== id);
-            localStorage.setItem('fisioterapia_privada', JSON.stringify(sesiones));
-            if (!sesiones.some(s => s.dni === dni)) {
-                pacienteSeleccionado = null;
-                location.reload(); 
-            } else {
-                verHistorial(dni);
+    // --- FUNCIONES DE RESPALDO EXTERNO ---
+    function exportarDatos() {
+        const datos = localStorage.getItem(DB_NAME);
+        if (!datos) return alert("No hay datos para exportar");
+        const blob = new Blob([datos], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `backup_clinica_${new Date().toLocaleDateString()}.json`;
+        a.click();
+    }
+
+    function importarDatos(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const contenido = e.target.result;
+                JSON.parse(contenido); // Validar que sea JSON
+                localStorage.setItem(DB_NAME, contenido);
+                alert("Datos importados con éxito");
+                actualizarInterfaz();
+            } catch (err) {
+                alert("Archivo no válido");
             }
-        }
+        };
+        reader.readAsText(file);
     }
 </script>
 </body>
