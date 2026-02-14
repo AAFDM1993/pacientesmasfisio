@@ -3,17 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema Clínico +FISIO</title>
+    <title>Sistema Clínico +FISIO Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root { --primary: #2c3e50; --accent: #27ae60; --bg: #f4f7f6; --blue: #3498db; --danger: #e74c3c; --kids: #e67e22; --gray: #95a5a6; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); margin: 0; padding: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
         
-        /* Pantalla de Login */
         #login-screen { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 320px; z-index: 1000; }
         #login-screen input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; text-align: center; font-size: 1.1rem; }
         
-        /* Contenedor Principal */
         #main-app { display: none; width: 100%; max-width: 1150px; margin: 20px; grid-template-columns: 380px 1fr; gap: 20px; align-items: start; }
         .panel { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         h2 { font-size: 1.1rem; color: var(--primary); margin: 0 0 15px 0; border-bottom: 2px solid #eee; padding-bottom: 8px; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
@@ -21,25 +19,23 @@
         label { font-size: 0.85rem; font-weight: bold; color: #7f8c8d; }
         input, textarea, select { width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 0.9rem; }
         
-        /* Pestañas */
         .tabs { display: flex; gap: 5px; margin-bottom: 15px; background: #eee; padding: 5px; border-radius: 8px; }
         .tab { flex: 1; padding: 8px; text-align: center; cursor: pointer; border-radius: 6px; font-weight: bold; font-size: 0.8rem; color: #7f8c8d; }
         .tab.active[data-cat="Adultos"] { background: var(--blue); color: white; }
         .tab.active[data-cat="Kids"] { background: var(--kids); color: white; }
 
-        /* Tratamientos Dinámicos */
         .quick-notes { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
         .btn-tag { background: #ebf5fb; border: 1px solid #d6eaf8; color: #2980b9; padding: 6px 12px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .btn-tag:hover { background: #d6eaf8; }
         
-        /* Configuración de Tratamientos */
         #treatment-config { display: none; background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px dashed var(--gray); }
         .config-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 5px 10px; margin-bottom: 5px; border-radius: 4px; font-size: 0.8rem; border: 1px solid #eee; }
 
         .btn-save { width: 100%; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; }
+        .btn-clear { background: #eee; color: #333; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; font-weight: bold; margin-bottom: 10px; }
         .btn-pdf { background: var(--blue); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.7rem; }
         
-        .paciente-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; border-radius: 4px; }
+        .paciente-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; border-radius: 4px; transition: 0.2s; }
+        .paciente-item:hover { background: #f8f9fa; }
         .paciente-item.active { background: var(--blue); color: white; }
         .paciente-item.is-kid.active { background: var(--kids); color: white; }
 
@@ -62,8 +58,10 @@
     <div id="main-app">
         <div class="panel">
             <button onclick="location.reload()" style="float:right; background:none; border:none; color:var(--danger); cursor:pointer; font-size:0.7rem; font-weight:bold;">CERRAR SESIÓN</button>
-            <h2>📝 Registro</h2>
+            <h2>📝 Nueva Sesión</h2>
             
+            <button class="btn-clear" onclick="limpiarFormulario()">+ NUEVO PACIENTE (LIMPIAR)</button>
+
             <label>Categoría:</label>
             <select id="reg-categoria"><option value="Adultos">Adulto 👨‍💼</option><option value="Kids">Kid 🧒</option></select>
 
@@ -113,9 +111,7 @@
     let todasLasSesiones = [];
     let pacienteSeleccionado = null;
     let filtroCategoria = "Adultos";
-    
-    // Tratamientos por defecto
-    let misTratamientos = JSON.parse(localStorage.getItem('misTratamientos')) || ['CHC', 'CF', 'TENS', 'IF', 'KOTZ', 'MG', 'TC', 'KINESIO', 'Lib. Tejidos Blandos', 'Lib. Cicatriz'];
+    let misTratamientos = JSON.parse(localStorage.getItem('misTratamientos')) || ['CHC', 'CF', 'TENS', 'IF', 'KOTZ', 'MG', 'TC', 'KINESIO'];
 
     function checkPass() {
         if (document.getElementById('passInput').value === CLAVE_MAESTRA) {
@@ -126,22 +122,14 @@
         } else { alert("Clave incorrecta"); }
     }
 
-    // --- LÓGICA DE TRATAMIENTOS DINÁMICOS ---
     function renderTratamientos() {
         const container = document.getElementById('quick-notes-container');
         const configList = document.getElementById('treatment-list-config');
-        container.innerHTML = '';
-        configList.innerHTML = '';
-
+        container.innerHTML = ''; configList.innerHTML = '';
         misTratamientos.forEach((t, index) => {
-            // Render en formulario
             const btn = document.createElement('div');
-            btn.className = 'btn-tag';
-            btn.innerText = t;
-            btn.onclick = () => addNote(t);
+            btn.className = 'btn-tag'; btn.innerText = t; btn.onclick = () => addNote(t);
             container.appendChild(btn);
-
-            // Render en panel configuración
             const item = document.createElement('div');
             item.className = 'config-item';
             item.innerHTML = `<span>${t}</span> <span onclick="removeTreatment(${index})" style="color:var(--danger); cursor:pointer;">✕</span>`;
@@ -159,8 +147,7 @@
         if(val) {
             misTratamientos.push(val);
             localStorage.setItem('misTratamientos', JSON.stringify(misTratamientos));
-            document.getElementById('newTreatment').value = '';
-            renderTratamientos();
+            document.getElementById('newTreatment').value = ''; renderTratamientos();
         }
     }
 
@@ -176,7 +163,14 @@
         area.focus();
     }
 
-    // --- LÓGICA DE DATOS ---
+    function limpiarFormulario() {
+        document.getElementById('dni').value = '';
+        document.getElementById('paciente').value = '';
+        document.getElementById('notas').value = '';
+        pacienteSeleccionado = null;
+        actualizarListaPacientes();
+    }
+
     async function cargarDatosDesdeNube() {
         document.getElementById('loading-overlay').style.display = 'flex';
         try {
@@ -221,7 +215,13 @@
             if (p.cat === filtroCategoria && (p.nombre.toLowerCase().includes(texto) || dni.includes(texto))) {
                 const div = document.createElement('div');
                 div.className = `paciente-item ${dni === pacienteSeleccionado ? 'active' : ''} ${p.cat === 'Kids' ? 'is-kid' : ''}`;
-                div.onclick = () => verHistorial(dni);
+                div.onclick = () => {
+                    // CARGAR DATOS EN FORMULARIO
+                    document.getElementById('dni').value = dni;
+                    document.getElementById('paciente').value = p.nombre;
+                    document.getElementById('reg-categoria').value = p.cat;
+                    verHistorial(dni);
+                };
                 div.innerHTML = `<strong>${p.nombre}</strong><br><small>DNI: ${dni}</small>`;
                 listaDiv.appendChild(div);
             }
