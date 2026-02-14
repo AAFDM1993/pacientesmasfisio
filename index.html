@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema Clínico +FISIO</title>
+    <title>Sistema Clínico +FISIO (Adultos & Kids)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        :root { --primary: #2c3e50; --accent: #27ae60; --bg: #f4f7f6; --blue: #3498db; --danger: #e74c3c; }
+        :root { --primary: #2c3e50; --accent: #27ae60; --bg: #f4f7f6; --blue: #3498db; --danger: #e74c3c; --kids: #e67e22; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); margin: 0; padding: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
         
         /* Pantalla de Login */
@@ -13,36 +14,50 @@
         #login-screen h1 { font-size: 1.4rem; color: var(--primary); margin-bottom: 20px; }
         #login-screen input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; text-align: center; font-size: 1.1rem; }
         
-        /* Contenedor Principal (Oculto) */
+        /* Contenedor Principal */
         #main-app { display: none; width: 100%; max-width: 1150px; margin: 20px; grid-template-columns: 380px 1fr; gap: 20px; align-items: start; }
         
         .panel { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         h2 { font-size: 1.1rem; color: var(--primary); margin: 0 0 15px 0; border-bottom: 2px solid #eee; padding-bottom: 8px; text-transform: uppercase; }
 
         label { font-size: 0.85rem; font-weight: bold; color: #7f8c8d; }
-        input, textarea { width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        input, textarea, select { width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 0.9rem; }
         
+        /* Pestañas de Categoría */
+        .tabs { display: flex; gap: 5px; margin-bottom: 15px; background: #eee; padding: 5px; border-radius: 8px; }
+        .tab { flex: 1; padding: 8px; text-align: center; cursor: pointer; border-radius: 6px; font-weight: bold; font-size: 0.8rem; transition: 0.3s; color: #7f8c8d; }
+        .tab.active[data-cat="Adultos"] { background: var(--blue); color: white; }
+        .tab.active[data-cat="Kids"] { background: var(--kids); color: white; }
+
+        /* Tratamientos */
         .quick-notes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; }
-        .btn-tag { background: #ebf5fb; border: 1px solid #d6eaf8; color: #2980b9; padding: 8px 4px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; font-weight: bold; text-align: center; }
+        .btn-tag { background: #ebf5fb; border: 1px solid #d6eaf8; color: #2980b9; padding: 8px 4px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; font-weight: bold; text-align: center; display: flex; align-items: center; justify-content: center; min-height: 35px; }
         .btn-tag:hover { background: #d6eaf8; }
+        .btn-tag.long { grid-column: span 2; }
 
-        .btn-save { width: 100%; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.3s; }
+        .btn-save { width: 100%; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.3s; margin-bottom: 10px;}
         .btn-save:hover { background: #219150; }
-        .btn-save:disabled { background: #bdc3c7; }
+        .btn-pdf { width: 100%; background: var(--blue); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 5px; font-size: 0.8rem; }
 
-        .paciente-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; border-radius: 4px; display: flex; flex-direction: column; transition: 0.2s; }
-        .paciente-item:hover { background: #f0f7ff; }
+        .paciente-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; border-radius: 4px; display: flex; flex-direction: column; transition: 0.2s; position: relative; }
         .paciente-item.active { background: var(--blue); color: white; }
+        .paciente-item.is-kid.active { background: var(--kids); color: white; }
         
+        .badge { font-size: 0.6rem; padding: 2px 6px; border-radius: 10px; width: fit-content; margin-top: 4px; font-weight: bold; text-transform: uppercase; }
+        .badge-adulto { background: #d1ecf1; color: #0c5460; }
+        .badge-kid { background: #fff3cd; color: #856404; }
+
         .sesion-card { background: #fff; border-left: 5px solid var(--blue); padding: 15px; margin-bottom: 15px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: relative; }
         
         #loading-overlay { display:none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.85); z-index:2000; justify-content:center; align-items:center; font-weight:bold; color: var(--primary); }
+
+        @media (max-width: 800px) { #main-app { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
     <div id="login-screen">
-        <h1>🔐 Acceso al Sistema</h1>
+        <h1>🔐 Acceso +FISIO</h1>
         <input type="password" id="passInput" placeholder="Contraseña">
         <button class="btn-save" onclick="checkPass()">Entrar</button>
         <p id="error-msg" style="color:var(--danger); font-size: 0.8rem; margin-top: 10px; display: none;">Contraseña incorrecta</p>
@@ -52,9 +67,15 @@
 
     <div id="main-app">
         <div class="panel">
-            <button onclick="location.reload()" style="float:right; background:none; border:none; color:var(--danger); cursor:pointer; font-size:0.8rem;">Cerrar Sesión</button>
+            <button onclick="location.reload()" style="float:right; background:none; border:none; color:var(--danger); cursor:pointer; font-size:0.8rem; font-weight: bold;">✕ CERRAR</button>
             <h2>📝 Nuevo Registro</h2>
             
+            <label>Categoría del Paciente:</label>
+            <select id="reg-categoria">
+                <option value="Adultos">Adulto 👨‍💼</option>
+                <option value="Kids">Kid 🧒</option>
+            </select>
+
             <label>DNI:</label>
             <input type="text" id="dni" placeholder="ID del paciente">
             
@@ -71,13 +92,20 @@
                 <div class="btn-tag" onclick="addNote('MG')">MG</div>
                 <div class="btn-tag" onclick="addNote('TC')">TC</div>
                 <div class="btn-tag" onclick="addNote('KINESIO')">KINESIO</div>
+                <div class="btn-tag long" onclick="addNote('Liberación de tejidos blandos')">Lib. Tejidos Blandos</div>
+                <div class="btn-tag long" onclick="addNote('Liberación de cicatriz')">Lib. Cicatriz</div>
             </div>
             
             <textarea id="notas" rows="4" placeholder="Notas de la sesión..."></textarea>
-            <button class="btn-save" id="btnGuardar" onclick="agregarSesion()">GUARDAR EN LA NUBE</button>
+            <button class="btn-save" id="btnGuardar" onclick="agregarSesion()">💾 GUARDAR SESIÓN</button>
 
             <h2 style="margin-top: 30px;">👥 Mis Pacientes</h2>
-            <div id="listaPacientes">Inicie sesión para cargar...</div>
+            <div class="tabs">
+                <div class="tab active" data-cat="Adultos" onclick="setFiltroCat('Adultos')">Adultos</div>
+                <div class="tab" data-cat="Kids" onclick="setFiltroCat('Kids')">Kids</div>
+            </div>
+            <input type="text" id="buscador" class="search-box" style="margin-bottom:10px" placeholder="🔍 Buscar por nombre..." onkeyup="filtrarPacientes()">
+            <div id="listaPacientes">Cargando...</div>
         </div>
 
         <div class="panel">
@@ -89,29 +117,32 @@
     </div>
 
 <script>
-    // --- CONFIGURACIÓN ---
-    const CLAVE_MAESTRA = "masfisio123456789"; // Cambia esta clave
-    const URL_WEB_APP = "https://script.google.com/macros/s/AKfycbzE7heHqEeTY6iqsPsKCsD28tOoXJk0WEY9cLqc8i2WwELFcBCv7SphKBJza0sdTGwB0Q/exec"; // Tu URL de /exec
+    const CLAVE_MAESTRA = "masfisio123456789"; 
+    const URL_WEB_APP = "https://script.google.com/macros/s/AKfycbzE7heHqEeTY6iqsPsKCsD28tOoXJk0WEY9cLqc8i2WwELFcBCv7SphKBJza0sdTGwB0Q/exec"; 
     
     let todasLasSesiones = [];
     let pacienteSeleccionado = null;
+    let filtroCategoria = "Adultos";
 
-    // Control de Acceso
     function checkPass() {
-        const input = document.getElementById('passInput').value;
-        if (input === CLAVE_MAESTRA) {
+        if (document.getElementById('passInput').value === CLAVE_MAESTRA) {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'grid';
-            document.body.style.display = 'block';
             cargarDatosDesdeNube();
-        } else {
-            document.getElementById('error-msg').style.display = 'block';
-        }
+        } else { document.getElementById('error-msg').style.display = 'block'; }
     }
 
     function addNote(text) {
         const area = document.getElementById('notas');
         area.value += (area.value ? ', ' : '') + text;
+        area.focus();
+    }
+
+    function setFiltroCat(cat) {
+        filtroCategoria = cat;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelector(`.tab[data-cat="${cat}"]`).classList.add('active');
+        actualizarListaPacientes();
     }
 
     async function cargarDatosDesdeNube() {
@@ -121,7 +152,7 @@
             todasLasSesiones = await response.json();
             actualizarListaPacientes();
             if(pacienteSeleccionado) verHistorial(pacienteSeleccionado);
-        } catch (e) { alert("Error al conectar con la nube"); }
+        } catch (e) { console.error(e); }
         document.getElementById('loading-overlay').style.display = 'none';
     }
 
@@ -129,18 +160,11 @@
         const dni = document.getElementById('dni').value.trim();
         const nombre = document.getElementById('paciente').value.trim();
         const notas = document.getElementById('notas').value.trim();
+        const categoria = document.getElementById('reg-categoria').value;
         if (!dni || !nombre || !notas) return alert("Faltan datos");
 
         document.getElementById('btnGuardar').disabled = true;
-        
-        const datos = { 
-            action: 'save', 
-            id: Date.now(), 
-            dni, 
-            paciente: nombre, 
-            fecha: new Date().toLocaleString(), 
-            notas 
-        };
+        const datos = { action: 'save', id: Date.now(), dni, paciente: nombre, fecha: new Date().toLocaleString(), notas, categoria };
 
         await ejecutarAccionCloud(datos);
         document.getElementById('notas').value = '';
@@ -148,75 +172,87 @@
         cargarDatosDesdeNube();
     }
 
-    async function eliminarSesion(id) {
-        if (!confirm("¿Eliminar esta nota?")) return;
-        await ejecutarAccionCloud({ action: 'delete_session', id: id });
-        cargarDatosDesdeNube();
-    }
-
-    async function eliminarPaciente(dni) {
-        if (!confirm("¿Eliminar al paciente y todas sus sesiones?")) return;
-        await ejecutarAccionCloud({ action: 'delete_patient', dni: dni });
-        pacienteSeleccionado = null;
-        document.getElementById('contenedorHistorial').innerHTML = "";
-        cargarDatosDesdeNube();
-    }
-
     async function ejecutarAccionCloud(cuerpo) {
         document.getElementById('loading-overlay').style.display = 'flex';
-        try {
-            await fetch(URL_WEB_APP, {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify(cuerpo)
-            });
+        try { await fetch(URL_WEB_APP, { method: 'POST', mode: 'no-cors', body: JSON.stringify(cuerpo) });
         } catch (e) { alert("Error de sincronización"); }
     }
 
-    function actualizarListaPacientes() {
+    function filtrarPacientes() { actualizarListaPacientes(document.getElementById('buscador').value.toLowerCase()); }
+
+    function actualizarListaPacientes(texto = "") {
         const listaDiv = document.getElementById('listaPacientes');
         const mapa = {};
-        todasLasSesiones.forEach(s => mapa[s.dni] = s.paciente);
+        
+        // Agrupar sesiones por DNI para obtener la categoría más reciente
+        todasLasSesiones.forEach(s => {
+            mapa[s.dni] = { nombre: s.paciente, cat: s.categoria || "Adultos" };
+        });
         
         listaDiv.innerHTML = '';
-        Object.keys(mapa).sort().forEach(dni => {
-            const div = document.createElement('div');
-            div.className = `paciente-item ${String(dni) === String(pacienteSeleccionado) ? 'active' : ''}`;
-            div.onclick = () => verHistorial(dni);
-            div.innerHTML = `<strong>${mapa[dni]}</strong><small>DNI: ${dni}</small>`;
-            listaDiv.appendChild(div);
+        Object.keys(mapa).forEach(dni => {
+            const p = mapa[dni];
+            // Filtrar por Pestaña Activa Y Texto de búsqueda
+            if (p.cat === filtroCategoria && (p.nombre.toLowerCase().includes(texto) || dni.includes(texto))) {
+                const div = document.createElement('div');
+                div.className = `paciente-item ${String(dni) === String(pacienteSeleccionado) ? 'active' : ''} ${p.cat === 'Kids' ? 'is-kid' : ''}`;
+                div.onclick = () => verHistorial(dni);
+                div.innerHTML = `<strong>${p.nombre}</strong><small>DNI: ${dni}</small>`;
+                listaDiv.appendChild(div);
+            }
         });
     }
 
     function verHistorial(dni) {
         pacienteSeleccionado = dni;
-        actualizarListaPacientes();
+        actualizarListaPacientes(document.getElementById('buscador').value.toLowerCase());
         const filtradas = todasLasSesiones.filter(s => String(s.dni) === String(dni)).reverse();
-        
-        if (filtradas.length === 0) {
-            document.getElementById('contenedorHistorial').innerHTML = "Seleccione un paciente.";
-            return;
-        }
+        if (filtradas.length === 0) return;
 
-        const nombreP = filtradas[0].paciente;
+        const p = filtradas[0];
+        const colorCat = p.categoria === 'Kids' ? 'var(--kids)' : 'var(--blue)';
+
         document.getElementById('tituloHistorial').innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span>${nombreP}</span>
-                <button onclick="eliminarPaciente('${dni}')" style="background:var(--danger); color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:0.65rem;">BORRAR FICHA</button>
+                <span>${p.paciente} <span class="badge ${p.categoria === 'Kids' ? 'badge-kid' : 'badge-adulto'}">${p.categoria || 'Adulto'}</span></span>
+                <div>
+                    <button onclick="generarPDF('${dni}')" class="btn-pdf" style="width: auto; padding: 5px 10px;">📄 PDF</button>
+                    <button onclick="eliminarPaciente('${dni}')" style="background:var(--danger); color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:0.65rem; font-weight:bold;">BORRAR</button>
+                </div>
             </div>`;
 
-        const contenedor = document.getElementById('contenedorHistorial');
-        contenedor.innerHTML = filtradas.map(s => `
-            <div class="sesion-card">
+        document.getElementById('contenedorHistorial').innerHTML = filtradas.map(s => `
+            <div class="sesion-card" style="border-left-color: ${colorCat}">
                 <div style="display:flex; justify-content:space-between; color:#95a5a6; font-size:0.75rem">
                     <span>📅 ${s.fecha}</span>
-                    <span onclick="eliminarSesion('${s.id}')" style="color:var(--danger); cursor:pointer;">Eliminar nota ✖</span>
+                    <span onclick="eliminarSesion('${s.id}')" style="color:var(--danger); cursor:pointer;">✖</span>
                 </div>
                 <p style="white-space: pre-wrap; margin-top:10px; font-size:0.95rem;">${s.notas}</p>
             </div>
         `).join('');
     }
+
+    function generarPDF(dni) {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const filtradas = todasLasSesiones.filter(s => String(s.dni) === String(dni)).reverse();
+        doc.text(`+FISIO - Reporte: ${filtradas[0].paciente}`, 20, 20);
+        doc.text(`Categoría: ${filtradas[0].categoria || 'Adultos'}`, 20, 30);
+        let y = 50;
+        filtradas.forEach(s => {
+            doc.text(`${s.fecha}: ${s.notas}`, 20, y);
+            y += 10;
+        });
+        doc.save(`Ficha_${filtradas[0].paciente}.pdf`);
+    }
+
+    async function eliminarSesion(id) {
+        if (confirm("¿Eliminar nota?")) { await ejecutarAccionCloud({ action: 'delete_session', id }); cargarDatosDesdeNube(); }
+    }
+
+    async function eliminarPaciente(dni) {
+        if (confirm("¿Eliminar paciente completo?")) { await ejecutarAccionCloud({ action: 'delete_patient', dni }); pacienteSeleccionado = null; cargarDatosDesdeNube(); }
+    }
 </script>
 </body>
 </html>
-
