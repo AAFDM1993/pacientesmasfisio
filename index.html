@@ -157,20 +157,33 @@
     }
 
     async function agregarSesion() {
-        const dni = document.getElementById('dni').value.trim();
-        const nombre = document.getElementById('paciente').value.trim();
-        const notas = document.getElementById('notas').value.trim();
-        const categoria = document.getElementById('reg-categoria').value;
-        if (!dni || !nombre || !notas) return alert("Faltan datos");
+    const dniInput = document.getElementById('dni').value.trim();
+    // Forzamos a que sea texto asegurándonos de que no se trate como número
+    const dni = String(dniInput); 
+    
+    const nombre = document.getElementById('paciente').value.trim();
+    const notas = document.getElementById('notas').value.trim();
+    const categoria = document.getElementById('reg-categoria').value;
 
-        document.getElementById('btnGuardar').disabled = true;
-        const datos = { action: 'save', id: Date.now(), dni, paciente: nombre, fecha: new Date().toLocaleString(), notas, categoria };
+    if (!dni || !nombre || !notas) return alert("Faltan datos");
 
-        await ejecutarAccionCloud(datos);
-        document.getElementById('notas').value = '';
-        document.getElementById('btnGuardar').disabled = false;
-        cargarDatosDesdeNube();
-    }
+    document.getElementById('btnGuardar').disabled = true;
+    
+    const datos = { 
+        action: 'save', 
+        id: Date.now(), 
+        dni: dni, // Se envía como string
+        paciente: nombre, 
+        fecha: new Date().toLocaleString(), 
+        notas, 
+        categoria 
+    };
+
+    await ejecutarAccionCloud(datos);
+    document.getElementById('notas').value = '';
+    document.getElementById('btnGuardar').disabled = false;
+    cargarDatosDesdeNube();
+}
 
     async function ejecutarAccionCloud(cuerpo) {
         document.getElementById('loading-overlay').style.display = 'flex';
@@ -256,3 +269,4 @@
 </script>
 </body>
 </html>
+
