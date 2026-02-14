@@ -3,33 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>+FISIO | Gestión Total v0.6</title>
+    <title>+FISIO | Gestión Total v0.7</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root { --primary: #2c3e50; --accent: #27ae60; --bg: #f4f7f6; --blue: #3498db; --danger: #e74c3c; --admin: #8e44ad; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
         
         #login-screen { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 350px; }
-        #login-screen input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; }
+        #login-screen input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
         
-        #main-app { display: none; width: 100%; max-width: 1200px; margin: 20px; grid-template-columns: 420px 1fr; gap: 20px; }
-        .panel { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        #main-app { display: none; width: 100%; max-width: 1200px; margin: 20px; grid-template-columns: 420px 1fr; gap: 20px; align-items: start; }
+        .panel { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); box-sizing: border-box; }
         
         h2 { font-size: 0.9rem; color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 8px; text-transform: uppercase; margin-bottom: 15px; }
-        input, textarea, select { width: 100%; padding: 10px; margin: 5px 0 10px 0; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; }
+        input, textarea, select { width: 100%; padding: 10px; margin: 5px 0 10px 0; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; box-sizing: border-box; display: block; }
         
-        .btn-save { width: 100%; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-save { width: 100%; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-save:hover { background: #219150; }
         .btn-admin { background: var(--admin); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 5px; font-weight: bold; }
-        .btn-del { background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; }
+        .btn-del { background: var(--danger); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; }
 
         #admin-section { display: none; margin-top: 25px; padding: 15px; border: 2px solid var(--admin); border-radius: 10px; background: #f9f4ff; }
-        .user-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.8rem; background: white; }
-        .user-table th, .user-table td { border: 1px solid #eee; padding: 8px; text-align: left; }
+        .user-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.8rem; background: white; table-layout: fixed; }
+        .user-table th, .user-table td { border: 1px solid #eee; padding: 10px; text-align: left; overflow: hidden; text-overflow: ellipsis; }
+        .user-table th { background: #f4f4f4; }
         
-        .paciente-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; border-radius: 4px; }
+        .paciente-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; border-radius: 4px; transition: 0.2s; }
         .paciente-item:hover { background: #f0f7ff; }
         
-        .sesion-card { border-left: 5px solid var(--blue); padding: 15px; margin-bottom: 10px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .sesion-card { border-left: 5px solid var(--blue); padding: 15px; margin-bottom: 10px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: relative; }
+        .badge-fisio { position: absolute; top: 10px; right: 10px; background: #e8f4fd; color: #2980b9; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
+
         #loading { display:none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); z-index:9999; justify-content:center; align-items:center; flex-direction: column; }
     </style>
 </head>
@@ -46,35 +50,43 @@
 
     <div id="main-app">
         <div class="panel">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
                 <small id="current-user-info" style="font-weight:bold; color:var(--admin);"></small>
-                <a href="#" onclick="location.reload()" style="font-size:0.7rem; color:var(--danger);">Cerrar Sesión</a>
+                <a href="#" onclick="location.reload()" style="font-size:0.7rem; color:var(--danger); font-weight: bold;">Cerrar Sesión</a>
             </div>
 
-            <h2 style="margin-top:15px;">📝 Registro de Sesión</h2>
+            <h2>📝 Registro de Sesión</h2>
             <input type="text" id="dni" placeholder="DNI Paciente">
-            <input type="text" id="paciente" placeholder="Nombre completo">
-            <textarea id="notas" rows="3" placeholder="Notas de la sesión..."></textarea>
-            <button class="btn-save" onclick="guardarSesion()">💾 GUARDAR</button>
+            <input type="text" id="paciente" placeholder="Nombre del Paciente">
+            <textarea id="notas" rows="3" placeholder="Descripción del tratamiento..."></textarea>
+            <button class="btn-save" onclick="guardarSesion()">💾 GUARDAR SESIÓN</button>
 
-            <h2 style="margin-top:20px;">👥 Pacientes</h2>
-            <input type="text" id="buscador" placeholder="🔍 Buscar..." onkeyup="renderListaPacientes(this.value.toLowerCase())">
-            <div id="listaPacientes" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; padding: 5px;"></div>
+            <h2 style="margin-top:25px;">👥 Lista de Pacientes</h2>
+            <input type="text" id="buscador" placeholder="🔍 Buscar por DNI o Nombre..." onkeyup="renderListaPacientes(this.value.toLowerCase())">
+            <div id="listaPacientes" style="max-height: 250px; overflow-y: auto; border: 1px solid #eee; margin-top:5px; border-radius: 6px;"></div>
 
             <div id="admin-section">
-                <h2>⚙️ Gestión de Usuarios</h2>
-                <div style="background: white; padding: 10px; border-radius: 5px; border: 1px solid #ddd; margin-bottom: 10px;">
-                    <input type="text" id="new-user-name" placeholder="Nuevo Usuario">
+                <h2>⚙️ Panel de Administración</h2>
+                <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
+                    <label style="font-size: 0.7rem; font-weight: bold; color: var(--admin);">NUEVO USUARIO:</label>
+                    <input type="text" id="new-user-fullname" placeholder="Nombre Completo (Ej: Juan Pérez)">
+                    <input type="text" id="new-user-name" placeholder="ID Usuario (Ej: jperez)">
                     <input type="password" id="new-user-pass" placeholder="Contraseña">
                     <select id="new-user-rol">
-                        <option value="Fisio">Fisioterapeuta</option>
-                        <option value="Admin">Administrador</option>
+                        <option value="Fisio">Fisioterapeuta 🩺</option>
+                        <option value="Admin">Administrador 🔑</option>
                     </select>
-                    <button class="btn-admin" onclick="registrarUsuario()">+ AGREGAR USUARIO</button>
+                    <button class="btn-admin" onclick="registrarUsuario()">+ CREAR ACCESO</button>
                 </div>
                 
                 <table class="user-table">
-                    <thead><tr><th>Usuario</th><th>Rol</th><th>Acción</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th style="width: 40%;">Nombre / Usuario</th>
+                            <th style="width: 30%;">Rol</th>
+                            <th style="width: 30%;">Acción</th>
+                        </tr>
+                    </thead>
                     <tbody id="tabla-usuarios-body"></tbody>
                 </table>
             </div>
@@ -83,13 +95,13 @@
         <div class="panel">
             <h2 id="tituloHistorial">Ficha Clínica</h2>
             <div id="contenedorHistorial">
-                <p style="text-align:center; color:#ccc; margin-top:100px;">Selecciona un paciente.</p>
+                <p style="text-align:center; color:#ccc; margin-top:100px;">Selecciona un paciente para ver su historial médico.</p>
             </div>
         </div>
     </div>
 
 <script>
-    const URL_WEB_APP = "https://script.google.com/macros/s/AKfycbwkX9S7LgdqaXFb_XX9JEWuyofDkrcUnEuzOmLHeDy8I38RLx4COR6atz2J4-o98bz2PA/exec"; 
+    const URL_WEB_APP = "https://script.google.com/macros/s/AKfycbxX0Ws9oZTSSY2zpSSsADmw4A7v-WyphHvpfEo0L-_O3ebQRlMApZ4RlrM6WTZZ2zjpXA/exec"; 
     
     let db_pacientes = [];
     let db_usuarios = [];
@@ -111,99 +123,88 @@
                 renderListaPacientes();
                 if(loggedUser.rol.toLowerCase() === 'admin') renderTablaUsuarios();
             }
-        } catch(e) { console.error(e); }
+        } catch(e) { console.error("Error cargando datos:", e); }
         document.getElementById('loading').style.display = 'none';
     }
 
-function login() {
-    const uIn = document.getElementById('userInput').value.trim().toLowerCase();
-    const pIn = document.getElementById('passInput').value.trim();
-    
-    // Mostramos en consola para que tú puedas ver qué está leyendo (F12 en el navegador)
-    console.log("Intentando entrar con:", uIn);
-    console.log("Usuarios cargados en memoria:", db_usuarios);
-
-    const found = db_usuarios.find(user => {
-        // Limpiamos los datos que vienen del Excel por si traen espacios
-        const excelUser = String(user.usuario).trim().toLowerCase();
-        const excelPass = String(user.password).trim();
+    function login() {
+        const uIn = document.getElementById('userInput').value.trim().toLowerCase();
+        const pIn = document.getElementById('passInput').value.trim();
         
-        return excelUser === uIn && excelPass === pIn;
-    });
+        const found = db_usuarios.find(u => 
+            String(u.usuario).trim().toLowerCase() === uIn && String(u.password).trim() === pIn
+        );
 
-    if(found) {
-        loggedUser = found;
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('main-app').style.display = 'grid';
-        document.getElementById('current-user-info').innerText = `👤 ${found.usuario.toUpperCase()}`;
-        
-        if(String(found.rol).toLowerCase() === 'admin') {
-            document.getElementById('admin-section').style.display = 'block';
-            renderTablaUsuarios();
+        if(found) {
+            loggedUser = found;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'grid';
+            // Usamos el nombre_completo para el saludo
+            document.getElementById('current-user-info').innerText = `👤 ${found.nombre_completo || found.usuario}`;
+            
+            if(found.rol.toLowerCase() === 'admin') {
+                document.getElementById('admin-section').style.display = 'block';
+                renderTablaUsuarios();
+            }
+            renderListaPacientes();
+        } else {
+            alert("Credenciales incorrectas. Verifique mayúsculas/minúsculas.");
         }
-        renderListaPacientes();
-    } else {
-        alert("Acceso denegado. Revisa que el usuario sea idéntico al del Excel.");
     }
-}
 
     function renderTablaUsuarios() {
         const tbody = document.getElementById('tabla-usuarios-body');
         tbody.innerHTML = db_usuarios.map(u => `
             <tr>
-                <td><strong>${u.usuario}</strong></td>
-                <td>${u.rol}</td>
+                <td><strong>${u.nombre_completo || 'Sin nombre'}</strong><br><small>${u.usuario}</small></td>
+                <td><span style="color:${u.rol === 'Admin' ? 'var(--admin)' : 'var(--blue)'}">${u.rol}</span></td>
                 <td>
                     ${u.usuario.toLowerCase() !== loggedUser.usuario.toLowerCase() ? 
-                    `<button class="btn-del" onclick="eliminarUsuario('${u.usuario}')">Borrar</button>` : 
-                    '<small style="color:gray">Eres tú</small>'}
+                    `<button class="btn-del" onclick="eliminarUsuario('${u.usuario}')">Eliminar</button>` : 
+                    '<small style="color:gray">Sesión activa</small>'}
                 </td>
             </tr>
         `).join('');
     }
 
-    async function eliminarUsuario(username) {
-        if(!confirm(`¿Seguro que quieres eliminar a ${username}?`)) return;
-        document.getElementById('loading').style.display = 'flex';
-        await fetch(URL_WEB_APP, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: JSON.stringify({ action: 'delete_user', usuario: username })
-        });
-        setTimeout(fetchData, 1500);
-    }
-
     async function registrarUsuario() {
+        const nombre_completo = document.getElementById('new-user-fullname').value.trim();
         const usuario = document.getElementById('new-user-name').value.trim();
         const password = document.getElementById('new-user-pass').value.trim();
         const rol = document.getElementById('new-user-rol').value;
 
-        if(!usuario || !password) return alert("Completa los datos");
+        if(!usuario || !password || !nombre_completo) return alert("Por favor, llena todos los campos incluyendo el nombre completo.");
 
         document.getElementById('loading').style.display = 'flex';
         await fetch(URL_WEB_APP, {
             method: 'POST',
             mode: 'no-cors',
-            body: JSON.stringify({ action: 'save_user', usuario, password, rol })
+            body: JSON.stringify({ action: 'save_user', usuario, password, rol, nombre_completo })
         });
         
+        // Limpiar campos
+        document.getElementById('new-user-fullname').value = '';
         document.getElementById('new-user-name').value = '';
         document.getElementById('new-user-pass').value = '';
         setTimeout(fetchData, 1500);
     }
 
+    // Funciones de pacientes (renderListaPacientes, cargarPaciente, verHistorial, guardarSesion)
+    // Se mantienen iguales pero optimizadas con el nombre del usuario logueado
     function renderListaPacientes(filtro = "") {
         const lista = document.getElementById('listaPacientes');
         const unicos = {};
         db_pacientes.forEach(p => unicos[p.dni] = p.paciente);
         
-        lista.innerHTML = Object.keys(unicos).filter(dni => 
+        const dnisFiltrados = Object.keys(unicos).filter(dni => 
             unicos[dni].toLowerCase().includes(filtro) || dni.includes(filtro)
-        ).map(dni => `
+        );
+
+        lista.innerHTML = dnisFiltrados.length ? dnisFiltrados.map(dni => `
             <div class="paciente-item" onclick="cargarPaciente('${dni}', '${unicos[dni]}')">
-                <strong>${unicos[dni]}</strong> - <small>${dni}</small>
+                <strong>${unicos[dni]}</strong><br><small>DNI: ${dni}</small>
             </div>
-        `).join('');
+        `).join('') : '<p style="padding:10px; font-size:0.8rem; color:gray;">No se encontraron resultados.</p>';
     }
 
     function cargarPaciente(dni, nombre) {
@@ -215,11 +216,14 @@ function login() {
     function verHistorial(dni) {
         const filtrados = db_pacientes.filter(p => String(p.dni) === String(dni)).reverse();
         const cont = document.getElementById('contenedorHistorial');
+        if(!filtrados.length) return;
+
         document.getElementById('tituloHistorial').innerText = `Historial: ${filtrados[0].paciente}`;
         cont.innerHTML = filtrados.map(s => `
             <div class="sesion-card">
-                <small style="color:gray">📅 ${s.fecha} | 🩺 ${s.atendido_por || '---'}</small>
-                <p style="margin-top:8px;">${s.notas}</p>
+                <span class="badge-fisio">🩺 ${s.atendido_por || '---'}</span>
+                <small style="color:gray">📅 ${s.fecha}</small>
+                <p style="margin-top:10px; font-size: 0.95rem; color: #333; line-height: 1.4;">${s.notas}</p>
             </div>
         `).join('');
     }
@@ -228,7 +232,7 @@ function login() {
         const dni = document.getElementById('dni').value.trim();
         const paciente = document.getElementById('paciente').value.trim();
         const notas = document.getElementById('notas').value.trim();
-        if(!dni || !paciente || !notas) return alert("Faltan datos");
+        if(!dni || !paciente || !notas) return alert("Faltan datos de la sesión.");
 
         document.getElementById('loading').style.display = 'flex';
         await fetch(URL_WEB_APP, {
@@ -236,10 +240,23 @@ function login() {
             mode: 'no-cors',
             body: JSON.stringify({
                 action: 'save', id: Date.now(), dni, paciente, notas,
-                fecha: new Date().toLocaleString(), atendido_por: loggedUser.usuario, categoria: 'Adultos'
+                fecha: new Date().toLocaleString(), 
+                atendido_por: loggedUser.nombre_completo || loggedUser.usuario, 
+                categoria: 'Adultos'
             })
         });
         document.getElementById('notas').value = '';
+        setTimeout(fetchData, 1500);
+    }
+
+    async function eliminarUsuario(username) {
+        if(!confirm(`¿Realmente deseas eliminar el acceso a ${username}?`)) return;
+        document.getElementById('loading').style.display = 'flex';
+        await fetch(URL_WEB_APP, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({ action: 'delete_user', usuario: username })
+        });
         setTimeout(fetchData, 1500);
     }
 
@@ -247,6 +264,3 @@ function login() {
 </script>
 </body>
 </html>
-
-
-
