@@ -13,7 +13,7 @@
         #login-screen input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; text-align: center; font-size: 1.1rem; }
         
         #main-app { display: none; width: 100%; max-width: 1150px; margin: 20px; grid-template-columns: 380px 1fr; gap: 20px; align-items: start; }
-        .panel { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .panel { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); min-height: 80vh; }
         h2 { font-size: 1.1rem; color: var(--primary); margin: 0 0 15px 0; border-bottom: 2px solid #eee; padding-bottom: 8px; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
 
         label { font-size: 0.85rem; font-weight: bold; color: #7f8c8d; }
@@ -25,22 +25,19 @@
         .tab.active[data-cat="Kids"] { background: var(--kids); color: white; }
 
         .quick-notes { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
-        .btn-tag { background: #ebf5fb; border: 1px solid #d6eaf8; color: #2980b9; padding: 6px 12px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-tag { background: #ebf5fb; border: 1px solid #d6eaf8; color: #2980b9; padding: 6px 12px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; font-weight: bold; }
         
-        #treatment-config { display: none; background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px dashed var(--gray); }
-        .config-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 5px 10px; margin-bottom: 5px; border-radius: 4px; font-size: 0.8rem; border: 1px solid #eee; }
-
         .btn-save { width: 100%; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; }
-        .btn-clear { background: #eee; color: #333; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; font-weight: bold; margin-bottom: 10px; }
+        .btn-clear { background: #eee; color: #333; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; font-weight: bold; margin-bottom: 10px; width: 100%; }
         .btn-pdf { background: var(--blue); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.7rem; }
         
         .paciente-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; border-radius: 4px; transition: 0.2s; }
         .paciente-item:hover { background: #f8f9fa; }
-        .paciente-item.active { background: var(--blue); color: white; }
-        .paciente-item.is-kid.active { background: var(--kids); color: white; }
+        .paciente-item.active { background: var(--blue) !important; color: white !important; }
+        .paciente-item.is-kid.active { background: var(--kids) !important; color: white !important; }
 
         .sesion-card { background: #fff; border-left: 5px solid var(--blue); padding: 15px; margin-bottom: 15px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        #loading-overlay { display:none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.85); z-index:2000; justify-content:center; align-items:center; font-weight:bold; }
+        #loading-overlay { display:none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:2000; justify-content:center; align-items:center; flex-direction: column; }
         
         @media (max-width: 800px) { #main-app { grid-template-columns: 1fr; } }
     </style>
@@ -53,14 +50,17 @@
         <button class="btn-save" onclick="checkPass()">Entrar</button>
     </div>
 
-    <div id="loading-overlay">Sincronizando...</div>
+    <div id="loading-overlay">
+        <div style="margin-bottom:10px">Sincronizando con Google Sheets...</div>
+        <small id="load-status">Por favor, espere.</small>
+    </div>
 
     <div id="main-app">
         <div class="panel">
             <button onclick="location.reload()" style="float:right; background:none; border:none; color:var(--danger); cursor:pointer; font-size:0.7rem; font-weight:bold;">CERRAR SESIÓN</button>
             <h2>📝 Nueva Sesión</h2>
             
-            <button class="btn-clear" onclick="limpiarFormulario()">+ NUEVO PACIENTE (LIMPIAR)</button>
+            <button class="btn-clear" onclick="limpiarFormulario()">+ NUEVO PACIENTE / LIMPIAR</button>
 
             <label>Categoría:</label>
             <select id="reg-categoria"><option value="Adultos">Adulto 👨‍💼</option><option value="Kids">Kid 🧒</option></select>
@@ -76,12 +76,10 @@
                 <span onclick="toggleConfig()" style="color:var(--blue); cursor:pointer; font-size:0.7rem;">⚙️ CONFIGURAR</span>
             </label>
 
-            <div id="treatment-config">
-                <div style="display:flex; gap:5px; margin-bottom:10px;">
-                    <input type="text" id="newTreatment" placeholder="Ej: Magneto" style="margin:0; padding:5px;">
-                    <button onclick="saveNewTreatment()" style="background:var(--accent); color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">+</button>
-                </div>
-                <div id="treatment-list-config"></div>
+            <div id="treatment-config" style="display:none; background:#f9f9f9; padding:10px; border-radius:8px; margin-bottom:10px; border:1px dashed #ccc;">
+                <input type="text" id="newTreatment" placeholder="Ej: Magneto" style="width:70%; display:inline; margin:0;">
+                <button onclick="saveNewTreatment()" style="width:25%; background:var(--accent); border:none; color:white; padding:10px; border-radius:5px;">+</button>
+                <div id="treatment-list-config" style="margin-top:10px; font-size:0.8rem;"></div>
             </div>
 
             <div id="quick-notes-container" class="quick-notes"></div>
@@ -94,19 +92,22 @@
                 <div class="tab active" data-cat="Adultos" onclick="setFiltroCat('Adultos')">Adultos</div>
                 <div class="tab" data-cat="Kids" onclick="setFiltroCat('Kids')">Kids</div>
             </div>
-            <input type="text" id="buscador" placeholder="🔍 Buscar por nombre..." onkeyup="filtrarPacientes()">
-            <div id="listaPacientes">Cargando...</div>
+            <input type="text" id="buscador" placeholder="🔍 Buscar por nombre o DNI..." onkeyup="filtrarPacientes()">
+            <div id="listaPacientes" style="max-height: 400px; overflow-y: auto;">Cargando...</div>
         </div>
 
         <div class="panel">
             <h2 id="tituloHistorial">Ficha del Paciente</h2>
-            <div id="contenedorHistorial"><p style="text-align:center; color:#ccc; margin-top:50px;">Seleccione un paciente.</p></div>
+            <div id="contenedorHistorial">
+                <p style="text-align:center; color:#ccc; margin-top:50px;">Seleccione un paciente de la lista para ver su historial.</p>
+            </div>
         </div>
     </div>
 
 <script>
+    // CONFIGURACIÓN INICIAL
     const CLAVE_MAESTRA = "masfisio123456789"; 
-    const URL_WEB_APP = "https://script.google.com/macros/s/AKfycbzE7heHqEeTY6iqsPsKCsD28tOoXJk0WEY9cLqc8i2WwELFcBCv7SphKBJza0sdTGwB0Q/exec"; 
+    const URL_WEB_APP = "https://script.google.com/macros/s/AKfycbzMmt0RgY6jmnLy-3lFfqtscGB2kygPJZcCfxk_OY-y1QvjTRm0Ne6dySTJB1mGHkYLQA/exec"; // REEMPLAZA ESTO
     
     let todasLasSesiones = [];
     let pacienteSeleccionado = null;
@@ -122,6 +123,7 @@
         } else { alert("Clave incorrecta"); }
     }
 
+    // GESTIÓN DE TRATAMIENTOS
     function renderTratamientos() {
         const container = document.getElementById('quick-notes-container');
         const configList = document.getElementById('treatment-list-config');
@@ -131,31 +133,22 @@
             btn.className = 'btn-tag'; btn.innerText = t; btn.onclick = () => addNote(t);
             container.appendChild(btn);
             const item = document.createElement('div');
-            item.className = 'config-item';
-            item.innerHTML = `<span>${t}</span> <span onclick="removeTreatment(${index})" style="color:var(--danger); cursor:pointer;">✕</span>`;
+            item.innerHTML = `${t} <span onclick="removeTreatment(${index})" style="color:red; cursor:pointer; font-weight:bold; margin-left:10px;">✕</span>`;
             configList.appendChild(item);
         });
     }
 
     function toggleConfig() {
-        const panel = document.getElementById('treatment-config');
-        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        const p = document.getElementById('treatment-config');
+        p.style.display = p.style.display === 'none' ? 'block' : 'none';
     }
 
     function saveNewTreatment() {
         const val = document.getElementById('newTreatment').value.trim();
-        if(val) {
-            misTratamientos.push(val);
-            localStorage.setItem('misTratamientos', JSON.stringify(misTratamientos));
-            document.getElementById('newTreatment').value = ''; renderTratamientos();
-        }
+        if(val) { misTratamientos.push(val); localStorage.setItem('misTratamientos', JSON.stringify(misTratamientos)); document.getElementById('newTreatment').value = ''; renderTratamientos(); }
     }
 
-    function removeTreatment(index) {
-        misTratamientos.splice(index, 1);
-        localStorage.setItem('misTratamientos', JSON.stringify(misTratamientos));
-        renderTratamientos();
-    }
+    function removeTreatment(index) { misTratamientos.splice(index, 1); localStorage.setItem('misTratamientos', JSON.stringify(misTratamientos)); renderTratamientos(); }
 
     function addNote(text) {
         const area = document.getElementById('notas');
@@ -169,16 +162,29 @@
         document.getElementById('notas').value = '';
         pacienteSeleccionado = null;
         actualizarListaPacientes();
+        document.getElementById('contenedorHistorial').innerHTML = '<p style="text-align:center; color:#ccc; margin-top:50px;">Formulario limpio. Registre un nuevo paciente.</p>';
     }
 
+    // COMUNICACIÓN CON GOOGLE SHEETS
     async function cargarDatosDesdeNube() {
         document.getElementById('loading-overlay').style.display = 'flex';
         try {
             const response = await fetch(URL_WEB_APP);
-            todasLasSesiones = await response.json();
+            const rawData = await response.json();
+            
+            // Normalizar claves a minúsculas para evitar errores (DNI vs dni)
+            todasLasSesiones = rawData.map(item => {
+                const normalized = {};
+                for (let key in item) normalized[key.toLowerCase()] = item[key];
+                return normalized;
+            });
+
             actualizarListaPacientes();
             if(pacienteSeleccionado) verHistorial(pacienteSeleccionado);
-        } catch (e) { console.error(e); }
+        } catch (e) { 
+            console.error(e);
+            alert("Error al cargar datos. Verifique la URL del Web App.");
+        }
         document.getElementById('loading-overlay').style.display = 'none';
     }
 
@@ -187,15 +193,22 @@
         const nombre = document.getElementById('paciente').value.trim();
         const notas = document.getElementById('notas').value.trim();
         const categoria = document.getElementById('reg-categoria').value;
-        if (!dni || !nombre || !notas) return alert("Faltan datos");
+        
+        if (!dni || !nombre || !notas) return alert("Por favor, complete DNI, Nombre y Notas.");
 
         document.getElementById('btnGuardar').disabled = true;
-        const datos = { action:'save', id:Date.now(), dni, paciente:nombre, fecha:new Date().toLocaleString(), notas, categoria };
+        document.getElementById('loading-overlay').style.display = 'flex';
+
+        const datos = { action:'save', id:Date.now(), dni:dni, paciente:nombre, fecha:new Date().toLocaleString(), notas:notas, categoria:categoria };
         
-        await fetch(URL_WEB_APP, { method:'POST', mode:'no-cors', body:JSON.stringify(datos) });
-        document.getElementById('notas').value = '';
+        try {
+            await fetch(URL_WEB_APP, { method:'POST', mode:'no-cors', body:JSON.stringify(datos) });
+            document.getElementById('notas').value = '';
+            // Esperar un segundo antes de recargar para que Google procese
+            setTimeout(cargarDatosDesdeNube, 1500);
+        } catch (e) { alert("Error al guardar."); }
+        
         document.getElementById('btnGuardar').disabled = false;
-        cargarDatosDesdeNube();
     }
 
     function setFiltroCat(cat) {
@@ -208,15 +221,24 @@
     function actualizarListaPacientes(texto = "") {
         const listaDiv = document.getElementById('listaPacientes');
         const mapa = {};
-        todasLasSesiones.forEach(s => mapa[s.dni] = { nombre: s.paciente, cat: s.categoria || "Adultos" });
+        
+        // Obtenemos los pacientes únicos
+        todasLasSesiones.forEach(s => {
+            mapa[s.dni] = { nombre: s.paciente, cat: s.categoria || "Adultos" };
+        });
+        
         listaDiv.innerHTML = '';
-        Object.keys(mapa).sort().forEach(dni => {
+        const dnis = Object.keys(mapa).sort();
+
+        dnis.forEach(dni => {
             const p = mapa[dni];
-            if (p.cat === filtroCategoria && (p.nombre.toLowerCase().includes(texto) || dni.includes(texto))) {
+            const coincideBusqueda = p.nombre.toLowerCase().includes(texto) || dni.includes(texto);
+            
+            if (p.cat === filtroCategoria && coincideBusqueda) {
                 const div = document.createElement('div');
                 div.className = `paciente-item ${dni === pacienteSeleccionado ? 'active' : ''} ${p.cat === 'Kids' ? 'is-kid' : ''}`;
                 div.onclick = () => {
-                    // CARGAR DATOS EN FORMULARIO
+                    pacienteSeleccionado = dni;
                     document.getElementById('dni').value = dni;
                     document.getElementById('paciente').value = p.nombre;
                     document.getElementById('reg-categoria').value = p.cat;
@@ -228,37 +250,48 @@
         });
     }
 
-    function filtrarPacientes() { actualizarListaPacientes(document.getElementById('buscador').value.toLowerCase()); }
+    function filtrarPacientes() { 
+        actualizarListaPacientes(document.getElementById('buscador').value.toLowerCase()); 
+    }
 
     function verHistorial(dni) {
-        pacienteSeleccionado = dni;
         actualizarListaPacientes(document.getElementById('buscador').value.toLowerCase());
         const filtradas = todasLasSesiones.filter(s => String(s.dni) === String(dni)).reverse();
-        if (filtradas.length === 0) return;
-        const p = filtradas[0];
         
-        document.getElementById('tituloHistorial').innerHTML = `
+        const contenedor = document.getElementById('contenedorHistorial');
+        const titulo = document.getElementById('tituloHistorial');
+
+        if (filtradas.length === 0) {
+            contenedor.innerHTML = "<p style='text-align:center;'>No hay historial.</p>";
+            return;
+        }
+
+        const p = filtradas[0];
+        titulo.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
-                <span>${p.paciente}</span>
+                <span>${p.paciente} <small style="font-size:0.7rem; color:var(--gray)">(${p.categoria})</small></span>
                 <button onclick="generarPDF('${dni}')" class="btn-pdf">📄 PDF</button>
             </div>`;
 
-        document.getElementById('contenedorHistorial').innerHTML = filtradas.map(s => `
+        contenedor.innerHTML = filtradas.map(s => `
             <div class="sesion-card" style="border-left-color: ${s.categoria === 'Kids' ? 'var(--kids)' : 'var(--blue)'}">
                 <div style="display:flex; justify-content:space-between; color:var(--gray); font-size:0.75rem">
                     <span>📅 ${s.fecha}</span>
-                    <span onclick="eliminarSesion('${s.id}')" style="color:var(--danger); cursor:pointer;">✖</span>
+                    <span onclick="eliminarSesion('${s.id}')" style="color:var(--danger); cursor:pointer; font-weight:bold;">✖</span>
                 </div>
-                <p style="white-space:pre-wrap; margin-top:10px; font-size:0.9rem;">${s.notas}</p>
+                <p style="white-space:pre-wrap; margin-top:10px; font-size:0.95rem; color:#333;">${s.notas}</p>
             </div>
         `).join('');
+        
+        // Enfocar notas para nueva sesión automática
+        document.getElementById('notas').focus();
     }
 
     async function eliminarSesion(id) {
-        if(confirm("¿Eliminar nota?")) {
+        if(confirm("¿Seguro que desea eliminar esta nota?")) {
             document.getElementById('loading-overlay').style.display = 'flex';
-            await fetch(URL_WEB_APP, { method:'POST', mode:'no-cors', body:JSON.stringify({action:'delete_session', id}) });
-            cargarDatosDesdeNube();
+            await fetch(URL_WEB_APP, { method:'POST', mode:'no-cors', body:JSON.stringify({action:'delete_session', id: id}) });
+            setTimeout(cargarDatosDesdeNube, 1000);
         }
     }
 
@@ -266,9 +299,25 @@
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         const f = todasLasSesiones.filter(s => String(s.dni) === String(dni)).reverse();
-        doc.text(`HISTORIAL CLÍNICO - ${f[0].paciente}`, 20, 20);
-        let y = 40;
-        f.forEach(s => { doc.text(`${s.fecha}: ${s.notas.substring(0, 50)}...`, 20, y); y += 10; });
+        if(f.length === 0) return;
+
+        doc.setFontSize(16);
+        doc.text(`HISTORIAL CLÍNICO - ${f[0].paciente.toUpperCase()}`, 20, 20);
+        doc.setFontSize(10);
+        doc.text(`DNI: ${dni} | Categoría: ${f[0].categoria}`, 20, 30);
+        doc.line(20, 35, 190, 35);
+
+        let y = 45;
+        f.forEach(s => {
+            if(y > 270) { doc.addPage(); y = 20; }
+            doc.setFont(undefined, 'bold');
+            doc.text(`Fecha: ${s.fecha}`, 20, y);
+            y += 7;
+            doc.setFont(undefined, 'normal');
+            const splitText = doc.splitTextToSize(s.notas, 170);
+            doc.text(splitText, 20, y);
+            y += (splitText.length * 7) + 10;
+        });
         doc.save(`Ficha_${f[0].paciente}.pdf`);
     }
 </script>
