@@ -3,54 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema Clínico +FISIO (Adultos & Kids)</title>
+    <title>Sistema Clínico +FISIO</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        :root { --primary: #2c3e50; --accent: #27ae60; --bg: #f4f7f6; --blue: #3498db; --danger: #e74c3c; --kids: #e67e22; }
+        :root { --primary: #2c3e50; --accent: #27ae60; --bg: #f4f7f6; --blue: #3498db; --danger: #e74c3c; --kids: #e67e22; --gray: #95a5a6; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); margin: 0; padding: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
         
         /* Pantalla de Login */
         #login-screen { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 320px; z-index: 1000; }
-        #login-screen h1 { font-size: 1.4rem; color: var(--primary); margin-bottom: 20px; }
         #login-screen input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; text-align: center; font-size: 1.1rem; }
         
         /* Contenedor Principal */
         #main-app { display: none; width: 100%; max-width: 1150px; margin: 20px; grid-template-columns: 380px 1fr; gap: 20px; align-items: start; }
-        
         .panel { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        h2 { font-size: 1.1rem; color: var(--primary); margin: 0 0 15px 0; border-bottom: 2px solid #eee; padding-bottom: 8px; text-transform: uppercase; }
+        h2 { font-size: 1.1rem; color: var(--primary); margin: 0 0 15px 0; border-bottom: 2px solid #eee; padding-bottom: 8px; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
 
         label { font-size: 0.85rem; font-weight: bold; color: #7f8c8d; }
         input, textarea, select { width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 0.9rem; }
         
-        /* Pestañas de Categoría */
+        /* Pestañas */
         .tabs { display: flex; gap: 5px; margin-bottom: 15px; background: #eee; padding: 5px; border-radius: 8px; }
-        .tab { flex: 1; padding: 8px; text-align: center; cursor: pointer; border-radius: 6px; font-weight: bold; font-size: 0.8rem; transition: 0.3s; color: #7f8c8d; }
+        .tab { flex: 1; padding: 8px; text-align: center; cursor: pointer; border-radius: 6px; font-weight: bold; font-size: 0.8rem; color: #7f8c8d; }
         .tab.active[data-cat="Adultos"] { background: var(--blue); color: white; }
         .tab.active[data-cat="Kids"] { background: var(--kids); color: white; }
 
-        /* Tratamientos */
-        .quick-notes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 15px; }
-        .btn-tag { background: #ebf5fb; border: 1px solid #d6eaf8; color: #2980b9; padding: 8px 4px; border-radius: 4px; font-size: 0.7rem; cursor: pointer; font-weight: bold; text-align: center; display: flex; align-items: center; justify-content: center; min-height: 35px; }
+        /* Tratamientos Dinámicos */
+        .quick-notes { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
+        .btn-tag { background: #ebf5fb; border: 1px solid #d6eaf8; color: #2980b9; padding: 6px 12px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn-tag:hover { background: #d6eaf8; }
-        .btn-tag.long { grid-column: span 2; }
+        
+        /* Configuración de Tratamientos */
+        #treatment-config { display: none; background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px dashed var(--gray); }
+        .config-item { display: flex; justify-content: space-between; align-items: center; background: white; padding: 5px 10px; margin-bottom: 5px; border-radius: 4px; font-size: 0.8rem; border: 1px solid #eee; }
 
-        .btn-save { width: 100%; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.3s; margin-bottom: 10px;}
-        .btn-save:hover { background: #219150; }
-        .btn-pdf { width: 100%; background: var(--blue); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 5px; font-size: 0.8rem; }
-
-        .paciente-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; border-radius: 4px; display: flex; flex-direction: column; transition: 0.2s; position: relative; }
+        .btn-save { width: 100%; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; }
+        .btn-pdf { background: var(--blue); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.7rem; }
+        
+        .paciente-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; border-radius: 4px; }
         .paciente-item.active { background: var(--blue); color: white; }
         .paciente-item.is-kid.active { background: var(--kids); color: white; }
-        
-        .badge { font-size: 0.6rem; padding: 2px 6px; border-radius: 10px; width: fit-content; margin-top: 4px; font-weight: bold; text-transform: uppercase; }
-        .badge-adulto { background: #d1ecf1; color: #0c5460; }
-        .badge-kid { background: #fff3cd; color: #856404; }
 
-        .sesion-card { background: #fff; border-left: 5px solid var(--blue); padding: 15px; margin-bottom: 15px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: relative; }
+        .sesion-card { background: #fff; border-left: 5px solid var(--blue); padding: 15px; margin-bottom: 15px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        #loading-overlay { display:none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.85); z-index:2000; justify-content:center; align-items:center; font-weight:bold; }
         
-        #loading-overlay { display:none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.85); z-index:2000; justify-content:center; align-items:center; font-weight:bold; color: var(--primary); }
-
         @media (max-width: 800px) { #main-app { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -60,59 +55,54 @@
         <h1>🔐 Acceso +FISIO</h1>
         <input type="password" id="passInput" placeholder="Contraseña">
         <button class="btn-save" onclick="checkPass()">Entrar</button>
-        <p id="error-msg" style="color:var(--danger); font-size: 0.8rem; margin-top: 10px; display: none;">Contraseña incorrecta</p>
     </div>
 
-    <div id="loading-overlay">Sincronizando con la nube...</div>
+    <div id="loading-overlay">Sincronizando...</div>
 
     <div id="main-app">
         <div class="panel">
-            <button onclick="location.reload()" style="float:right; background:none; border:none; color:var(--danger); cursor:pointer; font-size:0.8rem; font-weight: bold;">✕ CERRAR</button>
-            <h2>📝 Nuevo Registro</h2>
+            <button onclick="location.reload()" style="float:right; background:none; border:none; color:var(--danger); cursor:pointer; font-size:0.7rem; font-weight:bold;">CERRAR SESIÓN</button>
+            <h2>📝 Registro</h2>
             
-            <label>Categoría del Paciente:</label>
-            <select id="reg-categoria">
-                <option value="Adultos">Adulto 👨‍💼</option>
-                <option value="Kids">Kid 🧒</option>
-            </select>
+            <label>Categoría:</label>
+            <select id="reg-categoria"><option value="Adultos">Adulto 👨‍💼</option><option value="Kids">Kid 🧒</option></select>
 
             <label>DNI:</label>
-            <input type="text" id="dni" placeholder="ID del paciente">
+            <input type="text" id="dni" placeholder="DNI del paciente">
             
             <label>Nombre:</label>
             <input type="text" id="paciente" placeholder="Nombre completo">
             
-            <label>Tratamientos Rápidos:</label>
-            <div class="quick-notes">
-                <div class="btn-tag" onclick="addNote('CHC')">CHC</div>
-                <div class="btn-tag" onclick="addNote('CF')">CF</div>
-                <div class="btn-tag" onclick="addNote('TENS')">TENS</div>
-                <div class="btn-tag" onclick="addNote('IF')">IF</div>
-                <div class="btn-tag" onclick="addNote('KOTZ')">KOTZ</div>
-                <div class="btn-tag" onclick="addNote('MG')">MG</div>
-                <div class="btn-tag" onclick="addNote('TC')">TC</div>
-                <div class="btn-tag" onclick="addNote('KINESIO')">KINESIO</div>
-                <div class="btn-tag long" onclick="addNote('Liberación de tejidos blandos')">Lib. Tejidos Blandos</div>
-                <div class="btn-tag long" onclick="addNote('Liberación de cicatriz')">Lib. Cicatriz</div>
+            <label style="display:flex; justify-content:space-between;">
+                Tratamientos Rápidos
+                <span onclick="toggleConfig()" style="color:var(--blue); cursor:pointer; font-size:0.7rem;">⚙️ CONFIGURAR</span>
+            </label>
+
+            <div id="treatment-config">
+                <div style="display:flex; gap:5px; margin-bottom:10px;">
+                    <input type="text" id="newTreatment" placeholder="Ej: Magneto" style="margin:0; padding:5px;">
+                    <button onclick="saveNewTreatment()" style="background:var(--accent); color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">+</button>
+                </div>
+                <div id="treatment-list-config"></div>
             </div>
+
+            <div id="quick-notes-container" class="quick-notes"></div>
             
             <textarea id="notas" rows="4" placeholder="Notas de la sesión..."></textarea>
             <button class="btn-save" id="btnGuardar" onclick="agregarSesion()">💾 GUARDAR SESIÓN</button>
 
-            <h2 style="margin-top: 30px;">👥 Mis Pacientes</h2>
+            <h2 style="margin-top: 25px;">👥 Mis Pacientes</h2>
             <div class="tabs">
                 <div class="tab active" data-cat="Adultos" onclick="setFiltroCat('Adultos')">Adultos</div>
                 <div class="tab" data-cat="Kids" onclick="setFiltroCat('Kids')">Kids</div>
             </div>
-            <input type="text" id="buscador" class="search-box" style="margin-bottom:10px" placeholder="🔍 Buscar por nombre..." onkeyup="filtrarPacientes()">
+            <input type="text" id="buscador" placeholder="🔍 Buscar por nombre..." onkeyup="filtrarPacientes()">
             <div id="listaPacientes">Cargando...</div>
         </div>
 
         <div class="panel">
             <h2 id="tituloHistorial">Ficha del Paciente</h2>
-            <div id="contenedorHistorial">
-                <p style="text-align: center; color: #bdc3c7; margin-top: 50px;">Seleccione un paciente de la lista.</p>
-            </div>
+            <div id="contenedorHistorial"><p style="text-align:center; color:#ccc; margin-top:50px;">Seleccione un paciente.</p></div>
         </div>
     </div>
 
@@ -123,13 +113,61 @@
     let todasLasSesiones = [];
     let pacienteSeleccionado = null;
     let filtroCategoria = "Adultos";
+    
+    // Tratamientos por defecto
+    let misTratamientos = JSON.parse(localStorage.getItem('misTratamientos')) || ['CHC', 'CF', 'TENS', 'IF', 'KOTZ', 'MG', 'TC', 'KINESIO', 'Lib. Tejidos Blandos', 'Lib. Cicatriz'];
 
     function checkPass() {
         if (document.getElementById('passInput').value === CLAVE_MAESTRA) {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'grid';
+            renderTratamientos();
             cargarDatosDesdeNube();
-        } else { document.getElementById('error-msg').style.display = 'block'; }
+        } else { alert("Clave incorrecta"); }
+    }
+
+    // --- LÓGICA DE TRATAMIENTOS DINÁMICOS ---
+    function renderTratamientos() {
+        const container = document.getElementById('quick-notes-container');
+        const configList = document.getElementById('treatment-list-config');
+        container.innerHTML = '';
+        configList.innerHTML = '';
+
+        misTratamientos.forEach((t, index) => {
+            // Render en formulario
+            const btn = document.createElement('div');
+            btn.className = 'btn-tag';
+            btn.innerText = t;
+            btn.onclick = () => addNote(t);
+            container.appendChild(btn);
+
+            // Render en panel configuración
+            const item = document.createElement('div');
+            item.className = 'config-item';
+            item.innerHTML = `<span>${t}</span> <span onclick="removeTreatment(${index})" style="color:var(--danger); cursor:pointer;">✕</span>`;
+            configList.appendChild(item);
+        });
+    }
+
+    function toggleConfig() {
+        const panel = document.getElementById('treatment-config');
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function saveNewTreatment() {
+        const val = document.getElementById('newTreatment').value.trim();
+        if(val) {
+            misTratamientos.push(val);
+            localStorage.setItem('misTratamientos', JSON.stringify(misTratamientos));
+            document.getElementById('newTreatment').value = '';
+            renderTratamientos();
+        }
+    }
+
+    function removeTreatment(index) {
+        misTratamientos.splice(index, 1);
+        localStorage.setItem('misTratamientos', JSON.stringify(misTratamientos));
+        renderTratamientos();
     }
 
     function addNote(text) {
@@ -138,13 +176,7 @@
         area.focus();
     }
 
-    function setFiltroCat(cat) {
-        filtroCategoria = cat;
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelector(`.tab[data-cat="${cat}"]`).classList.add('active');
-        actualizarListaPacientes();
-    }
-
+    // --- LÓGICA DE DATOS ---
     async function cargarDatosDesdeNube() {
         document.getElementById('loading-overlay').style.display = 'flex';
         try {
@@ -157,116 +189,88 @@
     }
 
     async function agregarSesion() {
-    const dniInput = document.getElementById('dni').value.trim();
-    // Forzamos a que sea texto asegurándonos de que no se trate como número
-    const dni = String(dniInput); 
-    
-    const nombre = document.getElementById('paciente').value.trim();
-    const notas = document.getElementById('notas').value.trim();
-    const categoria = document.getElementById('reg-categoria').value;
+        const dni = String(document.getElementById('dni').value.trim());
+        const nombre = document.getElementById('paciente').value.trim();
+        const notas = document.getElementById('notas').value.trim();
+        const categoria = document.getElementById('reg-categoria').value;
+        if (!dni || !nombre || !notas) return alert("Faltan datos");
 
-    if (!dni || !nombre || !notas) return alert("Faltan datos");
-
-    document.getElementById('btnGuardar').disabled = true;
-    
-    const datos = { 
-        action: 'save', 
-        id: Date.now(), 
-        dni: dni, // Se envía como string
-        paciente: nombre, 
-        fecha: new Date().toLocaleString(), 
-        notas, 
-        categoria 
-    };
-
-    await ejecutarAccionCloud(datos);
-    document.getElementById('notas').value = '';
-    document.getElementById('btnGuardar').disabled = false;
-    cargarDatosDesdeNube();
-}
-
-    async function ejecutarAccionCloud(cuerpo) {
-        document.getElementById('loading-overlay').style.display = 'flex';
-        try { await fetch(URL_WEB_APP, { method: 'POST', mode: 'no-cors', body: JSON.stringify(cuerpo) });
-        } catch (e) { alert("Error de sincronización"); }
+        document.getElementById('btnGuardar').disabled = true;
+        const datos = { action:'save', id:Date.now(), dni, paciente:nombre, fecha:new Date().toLocaleString(), notas, categoria };
+        
+        await fetch(URL_WEB_APP, { method:'POST', mode:'no-cors', body:JSON.stringify(datos) });
+        document.getElementById('notas').value = '';
+        document.getElementById('btnGuardar').disabled = false;
+        cargarDatosDesdeNube();
     }
 
-    function filtrarPacientes() { actualizarListaPacientes(document.getElementById('buscador').value.toLowerCase()); }
+    function setFiltroCat(cat) {
+        filtroCategoria = cat;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelector(`.tab[data-cat="${cat}"]`).classList.add('active');
+        actualizarListaPacientes();
+    }
 
     function actualizarListaPacientes(texto = "") {
         const listaDiv = document.getElementById('listaPacientes');
         const mapa = {};
-        
-        // Agrupar sesiones por DNI para obtener la categoría más reciente
-        todasLasSesiones.forEach(s => {
-            mapa[s.dni] = { nombre: s.paciente, cat: s.categoria || "Adultos" };
-        });
-        
+        todasLasSesiones.forEach(s => mapa[s.dni] = { nombre: s.paciente, cat: s.categoria || "Adultos" });
         listaDiv.innerHTML = '';
-        Object.keys(mapa).forEach(dni => {
+        Object.keys(mapa).sort().forEach(dni => {
             const p = mapa[dni];
-            // Filtrar por Pestaña Activa Y Texto de búsqueda
             if (p.cat === filtroCategoria && (p.nombre.toLowerCase().includes(texto) || dni.includes(texto))) {
                 const div = document.createElement('div');
-                div.className = `paciente-item ${String(dni) === String(pacienteSeleccionado) ? 'active' : ''} ${p.cat === 'Kids' ? 'is-kid' : ''}`;
+                div.className = `paciente-item ${dni === pacienteSeleccionado ? 'active' : ''} ${p.cat === 'Kids' ? 'is-kid' : ''}`;
                 div.onclick = () => verHistorial(dni);
-                div.innerHTML = `<strong>${p.nombre}</strong><small>DNI: ${dni}</small>`;
+                div.innerHTML = `<strong>${p.nombre}</strong><br><small>DNI: ${dni}</small>`;
                 listaDiv.appendChild(div);
             }
         });
     }
+
+    function filtrarPacientes() { actualizarListaPacientes(document.getElementById('buscador').value.toLowerCase()); }
 
     function verHistorial(dni) {
         pacienteSeleccionado = dni;
         actualizarListaPacientes(document.getElementById('buscador').value.toLowerCase());
         const filtradas = todasLasSesiones.filter(s => String(s.dni) === String(dni)).reverse();
         if (filtradas.length === 0) return;
-
         const p = filtradas[0];
-        const colorCat = p.categoria === 'Kids' ? 'var(--kids)' : 'var(--blue)';
-
+        
         document.getElementById('tituloHistorial').innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span>${p.paciente} <span class="badge ${p.categoria === 'Kids' ? 'badge-kid' : 'badge-adulto'}">${p.categoria || 'Adulto'}</span></span>
-                <div>
-                    <button onclick="generarPDF('${dni}')" class="btn-pdf" style="width: auto; padding: 5px 10px;">📄 PDF</button>
-                    <button onclick="eliminarPaciente('${dni}')" style="background:var(--danger); color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; font-size:0.65rem; font-weight:bold;">BORRAR</button>
-                </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+                <span>${p.paciente}</span>
+                <button onclick="generarPDF('${dni}')" class="btn-pdf">📄 PDF</button>
             </div>`;
 
         document.getElementById('contenedorHistorial').innerHTML = filtradas.map(s => `
-            <div class="sesion-card" style="border-left-color: ${colorCat}">
-                <div style="display:flex; justify-content:space-between; color:#95a5a6; font-size:0.75rem">
+            <div class="sesion-card" style="border-left-color: ${s.categoria === 'Kids' ? 'var(--kids)' : 'var(--blue)'}">
+                <div style="display:flex; justify-content:space-between; color:var(--gray); font-size:0.75rem">
                     <span>📅 ${s.fecha}</span>
                     <span onclick="eliminarSesion('${s.id}')" style="color:var(--danger); cursor:pointer;">✖</span>
                 </div>
-                <p style="white-space: pre-wrap; margin-top:10px; font-size:0.95rem;">${s.notas}</p>
+                <p style="white-space:pre-wrap; margin-top:10px; font-size:0.9rem;">${s.notas}</p>
             </div>
         `).join('');
+    }
+
+    async function eliminarSesion(id) {
+        if(confirm("¿Eliminar nota?")) {
+            document.getElementById('loading-overlay').style.display = 'flex';
+            await fetch(URL_WEB_APP, { method:'POST', mode:'no-cors', body:JSON.stringify({action:'delete_session', id}) });
+            cargarDatosDesdeNube();
+        }
     }
 
     function generarPDF(dni) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        const filtradas = todasLasSesiones.filter(s => String(s.dni) === String(dni)).reverse();
-        doc.text(`+FISIO - Reporte: ${filtradas[0].paciente}`, 20, 20);
-        doc.text(`Categoría: ${filtradas[0].categoria || 'Adultos'}`, 20, 30);
-        let y = 50;
-        filtradas.forEach(s => {
-            doc.text(`${s.fecha}: ${s.notas}`, 20, y);
-            y += 10;
-        });
-        doc.save(`Ficha_${filtradas[0].paciente}.pdf`);
-    }
-
-    async function eliminarSesion(id) {
-        if (confirm("¿Eliminar nota?")) { await ejecutarAccionCloud({ action: 'delete_session', id }); cargarDatosDesdeNube(); }
-    }
-
-    async function eliminarPaciente(dni) {
-        if (confirm("¿Eliminar paciente completo?")) { await ejecutarAccionCloud({ action: 'delete_patient', dni }); pacienteSeleccionado = null; cargarDatosDesdeNube(); }
+        const f = todasLasSesiones.filter(s => String(s.dni) === String(dni)).reverse();
+        doc.text(`HISTORIAL CLÍNICO - ${f[0].paciente}`, 20, 20);
+        let y = 40;
+        f.forEach(s => { doc.text(`${s.fecha}: ${s.notas.substring(0, 50)}...`, 20, y); y += 10; });
+        doc.save(`Ficha_${f[0].paciente}.pdf`);
     }
 </script>
 </body>
 </html>
-
