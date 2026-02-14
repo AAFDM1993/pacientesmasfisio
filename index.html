@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>+FISIO | Gestión Total</title>
+    <title>+FISIO | Gestión Total v0.5</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root { --primary: #2c3e50; --accent: #27ae60; --bg: #f4f7f6; --blue: #3498db; --danger: #e74c3c; --admin: #8e44ad; }
@@ -115,29 +115,37 @@
         document.getElementById('loading').style.display = 'none';
     }
 
-    function login() {
-        const uIn = document.getElementById('userInput').value.trim().toLowerCase();
-        const pIn = document.getElementById('passInput').value.trim();
-        
-        const found = db_usuarios.find(user => 
-            user.usuario.toLowerCase() === uIn && String(user.password) === pIn
-        );
+function login() {
+    const uIn = document.getElementById('userInput').value.trim().toLowerCase();
+    const pIn = document.getElementById('passInput').value.trim();
+    
+    // Mostramos en consola para que tú puedas ver qué está leyendo (F12 en el navegador)
+    console.log("Intentando entrar con:", uIn);
+    console.log("Usuarios cargados en memoria:", db_usuarios);
 
-        if(found) {
-            loggedUser = found;
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('main-app').style.display = 'grid';
-            document.getElementById('current-user-info').innerText = `👤 ${found.usuario.toUpperCase()}`;
-            
-            if(found.rol.toLowerCase() === 'admin') {
-                document.getElementById('admin-section').style.display = 'block';
-                renderTablaUsuarios();
-            }
-            renderListaPacientes();
-        } else {
-            alert("Usuario o clave incorrectos.");
+    const found = db_usuarios.find(user => {
+        // Limpiamos los datos que vienen del Excel por si traen espacios
+        const excelUser = String(user.usuario).trim().toLowerCase();
+        const excelPass = String(user.password).trim();
+        
+        return excelUser === uIn && excelPass === pIn;
+    });
+
+    if(found) {
+        loggedUser = found;
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('main-app').style.display = 'grid';
+        document.getElementById('current-user-info').innerText = `👤 ${found.usuario.toUpperCase()}`;
+        
+        if(String(found.rol).toLowerCase() === 'admin') {
+            document.getElementById('admin-section').style.display = 'block';
+            renderTablaUsuarios();
         }
+        renderListaPacientes();
+    } else {
+        alert("Acceso denegado. Revisa que el usuario sea idéntico al del Excel.");
     }
+}
 
     function renderTablaUsuarios() {
         const tbody = document.getElementById('tabla-usuarios-body');
@@ -239,3 +247,4 @@
 </script>
 </body>
 </html>
+
