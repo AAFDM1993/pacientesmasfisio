@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>+FISIO | Gestión Profesional v1.0</title>
+    <title>+FISIO | Gestión Especializada v1.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        :root { --primary: #2c3e50; --accent: #27ae60; --bg: #f4f7f6; --blue: #3498db; --danger: #e74c3c; --admin: #8e44ad; }
+        :root { 
+            --primary: #2c3e50; --accent: #27ae60; --bg: #f4f7f6; --blue: #3498db; 
+            --danger: #e74c3c; --admin: #8e44ad; --cat-bg: #e8f6f3; --cat-text: #16a085;
+        }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
         
         #login-screen { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 350px; }
@@ -22,6 +25,11 @@
         .btn-pdf { background: var(--blue); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; }
         .btn-del-note { color: var(--danger); background: none; border: none; cursor: pointer; font-size: 0.7rem; font-weight: bold; }
 
+        .cat-tag { 
+            display: inline-block; background: var(--cat-bg); color: var(--cat-text); 
+            padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; margin-bottom: 5px;
+        }
+
         #admin-section { display: none; margin-top: 25px; padding: 15px; border: 2px solid var(--admin); border-radius: 10px; background: #f9f4ff; }
         .user-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.8rem; background: white; }
         .user-table th, .user-table td { border: 1px solid #eee; padding: 8px; text-align: left; }
@@ -35,7 +43,7 @@
 </head>
 <body>
 
-    <div id="loading"><strong>🔄 Procesando...</strong></div>
+    <div id="loading"><strong>🔄 Procesando solicitud...</strong></div>
 
     <div id="login-screen">
         <h2 style="border:none; display:block;">+FISIO ACCESO</h2>
@@ -54,11 +62,20 @@
             <h2>📝 Nueva Sesión</h2>
             <input type="text" id="dni" placeholder="DNI Paciente">
             <input type="text" id="paciente" placeholder="Nombre completo">
-            <textarea id="notas" rows="3" placeholder="Detalles médicos..."></textarea>
-            <button class="btn-save" onclick="guardarSesion()">💾 GUARDAR</button>
+            
+            <label style="font-size: 0.75rem; font-weight: bold; color: var(--primary);">CATEGORÍA DE ESPECIALIDAD:</label>
+            <select id="categoria">
+                <option value="Fisioterapia Traumatologica">Fisioterapia Traumatológica</option>
+                <option value="Fisioterapia Reumatologica">Fisioterapia Reumatológica</option>
+                <option value="Fisioterapia Neuropediatrica">Fisioterapia Neuropediátrica</option>
+                <option value="Fisioterapia Neuro adultos">Fisioterapia Neuro adultos</option>
+            </select>
+
+            <textarea id="notas" rows="3" placeholder="Detalles de la evaluación y tratamiento..."></textarea>
+            <button class="btn-save" onclick="guardarSesion()">💾 GUARDAR EVOLUCIÓN</button>
 
             <h2 style="margin-top:20px;">👥 Pacientes</h2>
-            <input type="text" id="buscador" placeholder="🔍 Buscar..." onkeyup="renderListaPacientes(this.value.toLowerCase())">
+            <input type="text" id="buscador" placeholder="🔍 Buscar por nombre o DNI..." onkeyup="renderListaPacientes(this.value.toLowerCase())">
             <div id="listaPacientes" style="max-height: 200px; overflow-y: auto; border: 1px solid #eee;"></div>
 
             <div id="admin-section">
@@ -67,7 +84,7 @@
                 <input type="text" id="new-user-name" placeholder="ID Usuario">
                 <input type="password" id="new-user-pass" placeholder="Password">
                 <select id="new-user-rol"><option value="Fisio">Fisio</option><option value="Admin">Admin</option></select>
-                <button class="btn-save" style="background:var(--admin)" onclick="registrarUsuario()">+ AGREGAR</button>
+                <button class="btn-save" style="background:var(--admin)" onclick="registrarUsuario()">+ AGREGAR ACCESO</button>
                 <table class="user-table" style="margin-top:10px;">
                     <tbody id="tabla-usuarios-body"></tbody>
                 </table>
@@ -76,11 +93,11 @@
 
         <div class="panel">
             <h2>
-                <span>Ficha Clínica</span>
-                <button id="btnPdf" class="btn-pdf" style="display:none;" onclick="generarPDF()">📥 IMPRIMIR HISTORIAL</button>
+                <span>Ficha Clínica Histórica</span>
+                <button id="btnPdf" class="btn-pdf" style="display:none;" onclick="generarPDF()">📥 EXPORTAR PDF</button>
             </h2>
             <div id="contenedorHistorial">
-                <p style="text-align:center; color:#ccc; margin-top:100px;">Selecciona un paciente.</p>
+                <p style="text-align:center; color:#ccc; margin-top:100px;">Selecciona un paciente para ver su historial.</p>
             </div>
         </div>
     </div>
@@ -96,8 +113,11 @@
             const data = await r.json();
             db_pacientes = data.pacientes;
             db_usuarios = data.usuarios;
-            if(loggedUser) { renderListaPacientes(); if(loggedUser.rol.toLowerCase()==='admin') renderTablaUsuarios(); }
-        } catch(e) { alert("Error de conexión"); }
+            if(loggedUser) { 
+                renderListaPacientes(); 
+                if(loggedUser.rol.toLowerCase()==='admin') renderTablaUsuarios(); 
+            }
+        } catch(e) { console.error(e); }
         document.getElementById('loading').style.display = 'none';
     }
 
@@ -112,20 +132,23 @@
             document.getElementById('current-user-info').innerText = `👤 ${found.nombre_completo || found.usuario}`;
             if(found.rol.toLowerCase()==='admin') document.getElementById('admin-section').style.display='block';
             renderListaPacientes();
-        } else { alert("Datos incorrectos"); }
+        } else { alert("Acceso denegado"); }
     }
 
     async function guardarSesion() {
         const dni = document.getElementById('dni').value.trim();
         const nombre = document.getElementById('paciente').value.trim();
+        const cat = document.getElementById('categoria').value;
         const notas = document.getElementById('notas').value.trim();
-        if(!dni || !notas) return alert("DNI y Notas obligatorios");
+        
+        if(!dni || !notas) return alert("DNI y Notas son obligatorios");
 
         document.getElementById('loading').style.display = 'flex';
         const payload = {
             action: 'save', id: Date.now(), dni, paciente: nombre, 
             notas, fecha: new Date().toLocaleString(), 
-            atendido_por: loggedUser.nombre_completo || loggedUser.usuario, categoria: 'General'
+            atendido_por: loggedUser.nombre_completo || loggedUser.usuario, 
+            categoria: cat
         };
 
         await fetch(URL_WEB_APP, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
@@ -141,20 +164,16 @@
         
         cont.innerHTML = filtrados.map(s => `
             <div class="sesion-card">
-                <div style="display:flex; justify-content:space-between;">
-                    <small>📅 ${s.fecha} | 🩺 ${s.atendido_por}</small>
+                <div style="display:flex; justify-content:space-between; align-items: flex-start;">
+                    <div>
+                        <span class="cat-tag">${s.categoria || 'Fisioterapia General'}</span><br>
+                        <small>📅 ${s.fecha} | 🩺 ${s.atendido_por}</small>
+                    </div>
                     <button class="btn-del-note" onclick="eliminarNota('${s.id}')">✕ Eliminar</button>
                 </div>
-                <p>${s.notas}</p>
+                <p style="margin-top:10px; color:#333; line-height:1.5;">${s.notas}</p>
             </div>
         `).join('');
-    }
-
-    async function eliminarNota(id) {
-        if(!confirm("¿Eliminar esta nota permanentemente?")) return;
-        document.getElementById('loading').style.display = 'flex';
-        await fetch(URL_WEB_APP, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'delete_session', id }) });
-        setTimeout(fetchData, 1000);
     }
 
     function generarPDF() {
@@ -162,20 +181,44 @@
         const doc = new jsPDF();
         const filtrados = db_pacientes.filter(p => String(p.dni) === String(currentDni));
         
-        doc.setFontSize(18); doc.text("+FISIO - HISTORIAL CLÍNICO", 20, 20);
-        doc.setFontSize(12); doc.text(`Paciente: ${filtrados[0].paciente} | DNI: ${currentDni}`, 20, 30);
-        doc.line(20, 35, 190, 35);
+        doc.setFontSize(18); doc.setTextColor(44, 62, 80);
+        doc.text("+FISIO - HISTORIAL CLÍNICO DETALLADO", 20, 20);
+        
+        doc.setFontSize(11); doc.setTextColor(100);
+        doc.text(`Paciente: ${filtrados[0].paciente}`, 20, 30);
+        doc.text(`DNI: ${currentDni}`, 20, 35);
+        doc.line(20, 38, 190, 38);
 
-        let y = 45;
+        let y = 48;
         filtrados.forEach(s => {
-            doc.setFont(undefined, 'bold'); doc.text(`Fecha: ${s.fecha} - Atendido por: ${s.atendido_por}`, 20, y);
-            y += 7; doc.setFont(undefined, 'normal');
-            const lines = doc.splitTextToSize(s.notas, 160);
-            doc.text(lines, 25, y);
-            y += (lines.length * 7) + 10;
-            if(y > 270) { doc.addPage(); y = 20; }
+            if(y > 250) { doc.addPage(); y = 20; }
+            
+            doc.setFont(undefined, 'bold'); doc.setTextColor(39, 174, 96);
+            doc.text(`ESPECIALIDAD: ${s.categoria || 'General'}`, 20, y);
+            
+            y += 6;
+            doc.setFontSize(10); doc.setTextColor(100);
+            doc.text(`Fecha: ${s.fecha} | Atendido por: ${s.atendido_por}`, 20, y);
+            
+            y += 7;
+            doc.setFont(undefined, 'normal'); doc.setTextColor(0);
+            const lines = doc.splitTextToSize(s.notas, 165);
+            doc.text(lines, 20, y);
+            
+            y += (lines.length * 6) + 12;
+            doc.setDrawColor(230); doc.line(20, y-5, 190, y-5);
+            y += 5;
         });
-        doc.save(`Historial_${currentDni}.pdf`);
+        
+        doc.save(`Historial_${filtrados[0].paciente.replace(/ /g,"_")}.pdf`);
+    }
+
+    // Funciones auxiliares se mantienen...
+    async function eliminarNota(id) {
+        if(!confirm("¿Seguro que deseas eliminar esta evolución?")) return;
+        document.getElementById('loading').style.display = 'flex';
+        await fetch(URL_WEB_APP, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'delete_session', id }) });
+        setTimeout(fetchData, 1000);
     }
 
     function renderListaPacientes(f="") {
