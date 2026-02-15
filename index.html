@@ -346,12 +346,25 @@
         doc.setTextColor(44, 62, 80);
         doc.text("+FISIO | HISTORIA CLÍNICA", 55, 20); // Movido a la derecha
         
+        // Formatear fecha en DD/MM/AA HH:MM AM/PM
+        const ahora = new Date();
+        const dia = String(ahora.getDate()).padStart(2, '0');
+        const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+        const anio = String(ahora.getFullYear()).slice(-2);
+        let horas = ahora.getHours();
+        const minutos = String(ahora.getMinutes()).padStart(2, '0');
+        const ampm = horas >= 12 ? 'PM' : 'AM';
+        horas = horas % 12;
+        horas = horas ? horas : 12; // Si es 0, mostrar 12
+        const horaFormateada = String(horas).padStart(2, '0');
+        const fechaCompleta = `${dia}/${mes}/${anio} ${horaFormateada}:${minutos} ${ampm}`;
+        
         // Información del paciente
         doc.setFontSize(10); 
         doc.setTextColor(100);
         doc.text(`PACIENTE: ${datos[0].paciente.toUpperCase()}`, 20, 32);
         doc.text(`DNI: ${currentDni}`, 20, 37);
-        doc.text(`FECHA DE GENERACIÓN: ${new Date().toLocaleDateString('es-ES')}`, 20, 42);
+        doc.text(`FECHA: ${fechaCompleta}`, 20, 42);
         
         // Línea separadora
         doc.setDrawColor(39, 174, 96); 
