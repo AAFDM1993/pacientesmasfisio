@@ -139,44 +139,68 @@
     const URL_WEB_APP = "https://script.google.com/macros/s/AKfycbzGE5QlEawS_2vS547_8ci8jYurSFyiIu06JtUqF0DczHxJKWZGNu4Uk6MBk8hb5PqD/exec"; 
     const LOGO_PATH = "logo.png";
     let db_pacientes = [], db_usuarios = [], loggedUser = null, currentDni = null;
+    let logoBase64 = null; // Variable para almacenar logo en base64
+
+    // Cargar logo al iniciar la aplicación
+    window.addEventListener('load', function() {
+        cargarLogoBase64();
+    });
+
+    // Función para convertir logo a base64 (más confiable para PDF)
+    function cargarLogoBase64() {
+        const img = new Image();
+        img.crossOrigin = 'Anonymous';
+        img.src = LOGO_PATH;
+        img.onload = function() {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                logoBase64 = canvas.toDataURL('image/png');
+                console.log('✅ Logo cargado correctamente');
+            } catch(e) {
+                console.warn('⚠️ No se pudo convertir logo a base64:', e);
+            }
+        };
+        img.onerror = () => {
+            console.warn('⚠️ No se pudo cargar logo.png');
+        };
+    }
 
     async function fetchData() {
         const btn = document.getElementById('btnLogin');
         const status = document.getElementById('status-msg');
         try {
-            console.log("Iniciando conexión...");
-            const r = await fetch(URL_WEB_APP);
-            const data = await r.json();
-            if(!data.usuarios || !data.pacientes) throw new Error("Formato de datos inválido");
-            db_pacientes = data.pacientes;
-            db_usuarios = data.usuarios;
+            showLoading(true, "Cargando datos...");
+            status.innerText = "Conectando...";
+            const res = await fetch(URL_WEB_APP + "?action=load");
+            const data = await res.json();
+            db_pacientes = data.pacientes || [];
+            db_usuarios = data.usuarios || [];
             btn.disabled = false;
-            btn.innerText = "ENTRAR AL SISTEMA";
-            btn.style.background = "var(--accent)";
-            status.innerText = "✅ Conexión establecida";
-            status.style.color = "green";
-            if(loggedUser) renderListaPacientes();
-        } catch(e) { 
-            console.error(e);
-            btn.innerText = "ERROR DE CONEXIÓN";
-            btn.style.background = "var(--danger)";
-            status.innerText = "❌ Fallo al cargar. Revisa tu internet.";
-            status.style.color = "red";
-            btn.disabled = false; 
-            btn.onclick = () => login(true);
+            btn.innerText = "🔐 INGRESAR";
+            status.innerText = "✅ Conectado | Listo para acceder";
+            status.style.color = "#27ae60";
+            showLoading(false);
+        } catch(e) {
+            btn.disabled = false;
+            btn.innerText = "⚠️ INGRESAR (Sin conexión)";
+            status.innerText = "❌ Sin conexión. Puedes trabajar offline.";
+            status.style.color = "#e74c3c";
+            showLoading(false);
         }
-        document.getElementById('loading').style.display = 'none';
     }
 
-    function login(offline = false) {
-        const uIn = document.getElementById('userInput').value.trim();
-        const pIn = document.getElementById('passInput').value.trim();
-        const found = db_usuarios.find(u => String(u.usuario).toLowerCase() === uIn.toLowerCase() && String(u.password) == pIn);
-        if (found) {
-            acceder(found);
-        } else if (uIn === "admin" && pIn === "1234") {
-            alert("⚠️ Entrando en MODO PRUEBA (Admin local)");
-            acceder({ nombre_completo: "Administrador Local", usuario: "admin" });
+    function login() {
+        const u = document.getElementById('userInput').value.trim();
+        const p = document.getElementById('passInput').value.trim();
+        const user = db_usuarios.find(x => x.usuario === u && x.password === p);
+        if(user) {
+            acceder(user);
+        } else if(u === 'admin' && p === '1234') {
+            acceder({ usuario: 'admin', nombre_completo: 'Administrador Demo' });
         } else {
             alert("Usuario o contraseña incorrectos.\n\nTip: Usa 'admin' y '1234' para probar el diseño si no tienes usuarios en la base de datos.");
         }
@@ -282,35 +306,107 @@
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         const datos = db_pacientes.filter(p => String(p.dni) === String(currentDni));
-        const img = new Image();
-        img.src = LOGO_PATH;
-        img.onload = function() {
-            const ratio = Math.min(40 / img.width, 20 / img.height);
-            try { doc.addImage(img, 'PNG', 300 - (img.width*ratio), 10, img.width*ratio, img.height*ratio); } catch(e){}
+        
+        // MEJORA: Intentar usar logo en base64 primero, luego desde archivo
+        if(logoBase64) {
+            try {
+                // Logo en la esquina superior izquierda, más grande
+                doc.addImage(logoBase64, 'PNG', 15, 10, 35, 15);
+                console.log('✅ Logo agregado al PDF desde base64');
+            } catch(e) {
+                console.warn('⚠️ Error al agregar logo:', e);
+            }
             finalizarPDF(doc, datos);
-        };
-        img.onerror = () => finalizarPDF(doc, datos);
+        } else {
+            // Fallback: intentar cargar desde archivo
+            const img = new Image();
+            img.src = LOGO_PATH;
+            img.onload = function() {
+                try {
+                    // Logo más grande y visible
+                    const anchoLogo = 35;
+                    const altoLogo = (img.height / img.width) * anchoLogo;
+                    doc.addImage(img, 'PNG', 15, 10, anchoLogo, altoLogo);
+                    console.log('✅ Logo agregado al PDF desde archivo');
+                } catch(e) {
+                    console.warn('⚠️ Error al agregar logo:', e);
+                }
+                finalizarPDF(doc, datos);
+            };
+            img.onerror = () => {
+                console.warn('⚠️ Logo no encontrado, generando PDF sin logo');
+                finalizarPDF(doc, datos);
+            };
+        }
     }
 
     function finalizarPDF(doc, datos) {
-        doc.setFontSize(18); doc.setTextColor(44, 62, 80);
-        doc.text("+FISIO | HISTORIA CLÍNICA", 20, 22);
-        doc.setFontSize(10); doc.setTextColor(100);
+        // Título principal - ajustado para no solaparse con logo
+        doc.setFontSize(18); 
+        doc.setTextColor(44, 62, 80);
+        doc.text("+FISIO | HISTORIA CLÍNICA", 55, 20); // Movido a la derecha
+        
+        // Información del paciente
+        doc.setFontSize(10); 
+        doc.setTextColor(100);
         doc.text(`PACIENTE: ${datos[0].paciente.toUpperCase()}`, 20, 32);
         doc.text(`DNI: ${currentDni}`, 20, 37);
-        doc.setDrawColor(39, 174, 96); doc.line(20, 40, 190, 40);
-        let y = 50;
+        doc.text(`FECHA DE GENERACIÓN: ${new Date().toLocaleDateString('es-ES')}`, 20, 42);
+        
+        // Línea separadora
+        doc.setDrawColor(39, 174, 96); 
+        doc.setLineWidth(0.5);
+        doc.line(20, 46, 190, 46);
+        
+        let y = 55;
+        
         datos.forEach((s, i) => {
-            if(y > 260) { doc.addPage(); y = 20; }
-            doc.setFont(undefined, 'bold'); doc.setTextColor(39, 174, 96);
-            doc.text(`${i+1}. ${s.categoria}`, 20, y); y += 6;
-            doc.setFont(undefined, 'italic'); doc.setTextColor(130);
-            doc.text(`${s.fecha} - ${s.atendido_por}`, 20, y); y += 7;
-            doc.setFont(undefined, 'normal'); doc.setTextColor(40);
-            const l = doc.splitTextToSize(s.notas, 165);
-            doc.text(l, 20, y); y += (l.length * 6) + 12;
+            // Nueva página si no hay espacio
+            if(y > 260) { 
+                doc.addPage(); 
+                y = 20; 
+            }
+            
+            // Número y categoría
+            doc.setFont(undefined, 'bold'); 
+            doc.setFontSize(11);
+            doc.setTextColor(39, 174, 96);
+            doc.text(`${i+1}. ${s.categoria}`, 20, y); 
+            y += 6;
+            
+            // Fecha y profesional
+            doc.setFont(undefined, 'italic'); 
+            doc.setFontSize(9);
+            doc.setTextColor(130);
+            doc.text(`📅 ${s.fecha} | 🩺 ${s.atendido_por}`, 20, y); 
+            y += 7;
+            
+            // Notas de evolución
+            doc.setFont(undefined, 'normal'); 
+            doc.setFontSize(10);
+            doc.setTextColor(40);
+            const lineas = doc.splitTextToSize(s.notas, 165);
+            doc.text(lineas, 20, y); 
+            y += (lineas.length * 5) + 10;
+            
+            // Línea separadora entre sesiones
+            if(i < datos.length - 1) {
+                doc.setDrawColor(220);
+                doc.setLineWidth(0.3);
+                doc.line(20, y, 190, y);
+                y += 8;
+            }
         });
-        doc.save(`Historial_${currentDni}.pdf`);
+        
+        // Pie de página en la última página
+        const totalPages = doc.internal.pages.length - 1;
+        doc.setPage(totalPages);
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(`Documento generado por +FISIO Pro | Página ${totalPages}`, 105, 285, { align: 'center' });
+        
+        doc.save(`Historial_${datos[0].paciente.replace(/\s+/g, '_')}_${currentDni}.pdf`);
+        console.log('✅ PDF generado exitosamente');
     }
 
     function showLoading(show, text="Cargando...") {
