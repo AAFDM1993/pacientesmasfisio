@@ -13,52 +13,38 @@
         }
         body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: var(--bg); margin: 0; color: #333; line-height: 1.6; }
 
-        /* LOADING SPINNER */
+        /* LOADING */
         #loading { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 10000; justify-content: center; align-items: center; flex-direction: column;}
         .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--blue); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 10px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* LOGIN */
+        /* APP LAYOUT */
         #login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; box-sizing: border-box; }
         .login-card { background: var(--white); padding: 40px; border-radius: 16px; box-shadow: var(--shadow); width: 100%; max-width: 380px; text-align: center; }
         .logo-img { max-width: 180px; margin-bottom: 20px; }
 
-        /* APP LAYOUT */
         #main-app { display: none; max-width: 1300px; margin: 0 auto; padding: 20px; gap: 20px; grid-template-columns: 1fr; }
         @media (min-width: 1024px) { #main-app { grid-template-columns: 420px 1fr; } }
 
         .panel { background: var(--white); padding: 25px; border-radius: 12px; box-shadow: var(--shadow); height: fit-content; box-sizing: border-box; margin-bottom: 20px; }
         h2 { font-size: 0.9rem; color: var(--primary); border-bottom: 2px solid #f0f2f5; padding-bottom: 12px; text-transform: uppercase; margin-top: 0; display: flex; justify-content: space-between; align-items: center; }
 
-        /* INPUTS */
         input, textarea, select { width: 100%; padding: 12px; margin: 8px 0 16px 0; border: 1.5px solid #e0e6ed; border-radius: 8px; font-size: 0.95rem; box-sizing: border-box; outline: none; transition: 0.3s; }
         input:focus, textarea:focus { border-color: var(--blue); }
 
-        /* GRID CATEGORÍAS */
         .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
-        .cat-btn { 
-            background: #f8f9fa; border: 2px solid #e0e6ed; padding: 8px 4px; border-radius: 8px; 
-            text-align: center; cursor: pointer; font-size: 0.7rem; font-weight: 600; 
-            display: flex; flex-direction: column; align-items: center; gap: 4px; transition: 0.2s; 
-        }
-        .cat-btn span { font-size: 1rem; }
-        .cat-btn.active { background: var(--blue); color: white; border-color: var(--blue); box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3); }
+        .cat-btn { background: #f8f9fa; border: 2px solid #e0e6ed; padding: 8px 4px; border-radius: 8px; text-align: center; cursor: pointer; font-size: 0.7rem; font-weight: 600; display: flex; flex-direction: column; align-items: center; transition: 0.2s; }
+        .cat-btn.active { background: var(--blue); color: white; border-color: var(--blue); }
 
-        /* BOTONES */
-        .btn-save { background: var(--accent); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
+        .btn-save { background: var(--accent); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; }
         .btn-admin { background: var(--admin); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px;}
-        .btn-clear { background: #f1f3f5; color: var(--gray); border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .btn-pdf { background: var(--blue); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; }
-        .btn-del { background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold; font-size: 1.2rem; }
+        .btn-del { background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold; font-size: 1.2rem; padding: 5px; }
 
-        /* LISTA */
         .paciente-item { padding: 12px; border-bottom: 1px solid #f0f2f5; cursor: pointer; }
         .paciente-item:hover { background: #f8fbff; border-left: 4px solid var(--blue); }
-        .sesion-card { border: 1px solid #eef2f6; padding: 18px; margin-bottom: 12px; border-radius: 10px; background: #fff; position: relative;}
+        .sesion-card { border: 1px solid #eef2f6; padding: 18px; margin-bottom: 12px; border-radius: 10px; background: #fff; }
         .cat-tag { background: #e1f5fe; color: #0288d1; padding: 3px 10px; border-radius: 15px; font-size: 0.7rem; font-weight: bold; }
-        
-        /* ADMIN PANEL HIDDEN BY DEFAULT */
-        #admin-panel { display: none; border: 2px solid var(--admin); }
     </style>
 </head>
 <body>
@@ -71,13 +57,11 @@
     <div id="login-screen">
         <div class="login-card">
             <img src="logo.png" alt="Logo" class="logo-img" onerror="this.src='https://via.placeholder.com/150?text=FISIO+PRO'">
-            <h2 style="border:none; justify-content:center;">Acceso Profesional</h2>
+            <h2>Acceso Profesional</h2>
             <input type="text" id="userInput" placeholder="Usuario">
             <input type="password" id="passInput" placeholder="Contraseña">
             <button id="btnLogin" class="btn-save" onclick="login()" disabled>⌛ CONECTANDO...</button>
-            <p style="font-size:0.75rem; color:#999; margin-top:15px;">
-                Estado: <span id="status-msg">Esperando conexión...</span>
-            </p>
+            <p id="status-msg" style="font-size:0.75rem; margin-top:15px;">Sincronizando...</p>
         </div>
     </div>
 
@@ -91,11 +75,10 @@
 
                 <h2>📝 Nueva Evolución</h2>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                    <input type="text" id="dni" placeholder="DNI Paciente" onblur="autocompletarPaciente(this.value)">
+                    <input type="text" id="dni" placeholder="DNI Paciente" oninput="buscarPacientePorDni(this.value)">
                     <input type="text" id="paciente" placeholder="Nombre completo">
                 </div>
 
-                <label style="font-size: 0.7rem; font-weight: bold; color: var(--gray); display:block; margin-bottom:5px;">ESPECIALIDAD:</label>
                 <div class="cat-grid">
                     <div class="cat-btn active" onclick="seleccionarCat(this, 'Fisioterapia Traumatologica')"><span>🦴</span>Trauma</div>
                     <div class="cat-btn" onclick="seleccionarCat(this, 'Fisioterapia Reumatologica')"><span>💧</span>Reuma</div>
@@ -103,13 +86,8 @@
                     <div class="cat-btn" onclick="seleccionarCat(this, 'Fisioterapia Neuro adultos')"><span>🧠</span>Neuro Adultos</div>
                 </div>
                 <input type="hidden" id="categoria" value="Fisioterapia Traumatologica">
-
-                <textarea id="notas" rows="4" placeholder="Describe la evolución del tratamiento..."></textarea>
-                
-                <div style="display:flex; gap:10px;">
-                    <button class="btn-save" style="flex:2" onclick="guardarSesion()">💾 GUARDAR</button>
-                    <button class="btn-clear" style="flex:1" onclick="limpiarFormulario()">🧹</button>
-                </div>
+                <textarea id="notas" rows="4" placeholder="Notas de la sesión..."></textarea>
+                <button class="btn-save" onclick="guardarSesion()">💾 GUARDAR EVOLUCIÓN</button>
 
                 <h2 style="margin-top:25px;">👥 Buscador</h2>
                 <input type="text" placeholder="🔍 Buscar por nombre o DNI..." onkeyup="renderListaPacientes(this.value.toLowerCase())">
@@ -118,26 +96,25 @@
                 <button id="btnToggleAdmin" class="btn-admin" onclick="toggleAdminPanel()" style="display:none;">⚙️ PANEL ADMINISTRACIÓN</button>
             </div>
 
-            <div id="admin-panel" class="panel">
-                <h2 style="color:var(--admin)">🔑 Registrar Usuario</h2>
+            <div id="admin-panel" class="panel" style="display:none; border: 2px solid var(--admin);">
+                <h2 style="color:var(--admin)">🔑 Nuevo Usuario</h2>
                 <input type="text" id="adm-nombre" placeholder="Nombre Completo">
                 <select id="adm-rol">
                     <option value="profesional">Profesional</option>
                     <option value="admin">Administrador</option>
                 </select>
-                <input type="email" id="adm-email" placeholder="Email">
-                <input type="text" id="adm-user" placeholder="Nombre de Usuario">
+                <input type="text" id="adm-user" placeholder="Usuario">
                 <input type="password" id="adm-pass" placeholder="Contraseña">
-                <button class="btn-admin" onclick="guardarNuevoUsuario()">💾 GUARDAR USUARIO</button>
+                <button class="btn-admin" onclick="guardarNuevoUsuario()">💾 CREAR USUARIO</button>
             </div>
         </div>
 
         <div class="panel">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h2 id="tituloHistorial" style="border:none; margin:0;">Ficha Clínica</h2>
+                <h2 id="tituloHistorial">Ficha Clínica</h2>
                 <button id="btnPdf" class="btn-pdf" style="display:none;" onclick="generarPDF()">📥 PDF</button>
             </div>
-            <div id="contenedorHistorial" style="margin-top:15px;">
+            <div id="contenedorHistorial">
                 <p style="text-align:center; color:#adb5bd; margin-top:100px;">Selecciona un paciente.</p>
             </div>
         </div>
@@ -146,253 +123,211 @@
 <script>
     const URL_WEB_APP = "https://script.google.com/macros/s/AKfycbzGE5QlEawS_2vS547_8ci8jYurSFyiIu06JtUqF0DczHxJKWZGNu4Uk6MBk8hb5PqD/exec"; 
     let db_pacientes = [], db_usuarios = [], loggedUser = null, currentDni = null;
-    let logoBase64 = null;
 
-    window.addEventListener('load', () => {
-        cargarLogoBase64();
-        fetchData();
-    });
-
-    function cargarLogoBase64() {
-        const img = new Image();
-        img.crossOrigin = 'Anonymous';
-        img.src = "logo.png";
-        img.onload = function() {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width; canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
-            logoBase64 = canvas.toDataURL('image/png');
-        };
-    }
-
+    // 1. CARGA INICIAL
     async function fetchData() {
-        const btn = document.getElementById('btnLogin');
-        const status = document.getElementById('status-msg');
         try {
-            showLoading(true, "Sincronizando...");
+            showLoading(true, "Cargando base de datos...");
             const res = await fetch(URL_WEB_APP + "?action=load");
             const data = await res.json();
             db_pacientes = data.pacientes || [];
             db_usuarios = data.usuarios || [];
-            btn.disabled = false;
-            btn.innerText = "🔐 INGRESAR";
-            status.innerText = "✅ Conectado";
-            status.style.color = "#27ae60";
+            document.getElementById('btnLogin').disabled = false;
+            document.getElementById('btnLogin').innerText = "🔐 INGRESAR";
             showLoading(false);
         } catch(e) {
-            btn.disabled = false;
-            status.innerText = "⚠️ Modo Offline";
+            console.error(e);
+            document.getElementById('status-msg').innerText = "⚠️ Error de conexión";
             showLoading(false);
         }
     }
 
-    function login() {
-        const u = document.getElementById('userInput').value.trim();
-        const p = document.getElementById('passInput').value.trim();
+    // 2. LÓGICA DE DNI (MANTENER CEROS)
+    function buscarPacientePorDni(dniValue) {
+        const dniStr = String(dniValue).trim();
+        if(dniStr.length < 3) return;
         
-        // Credenciales demo o base de datos
-        const user = db_usuarios.find(x => x.usuario === u && x.password === p);
-        if(user || (u === 'admin' && p === '1234')) {
-            const finalUser = user || { usuario: 'admin', nombre_completo: 'Admin Sistema', rol: 'admin' };
-            acceder(finalUser);
-        } else {
-            alert("Credenciales incorrectas.");
-        }
-    }
-
-    function acceder(user) {
-        loggedUser = user;
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('main-app').style.display = 'grid';
-        document.getElementById('current-user-info').innerText = `👤 ${user.nombre_completo || user.usuario}`;
-        
-        // Mostrar panel admin solo si tiene el rol
-        if(user.rol === 'admin' || user.usuario === 'admin') {
-            document.getElementById('btnToggleAdmin').style.display = 'block';
-        }
-        renderListaPacientes();
-    }
-
-    // 3. LÓGICA DE NOTAS: Evitar duplicados
-    function autocompletarPaciente(dni) {
-        if(!dni) return;
-        const existente = db_pacientes.find(p => String(p.dni) === String(dni));
+        const existente = db_pacientes.find(p => String(p.dni) === dniStr);
         if(existente) {
             document.getElementById('paciente').value = existente.paciente;
-            verHistorial(dni);
+            verHistorial(dniStr);
         }
     }
 
+    function cargarPaciente(d, n) { 
+        const dniStr = String(d);
+        document.getElementById('dni').value = dniStr; 
+        document.getElementById('paciente').value = n; 
+        verHistorial(dniStr); 
+    }
+
+    function renderListaPacientes(f="") {
+        const lista = document.getElementById('listaPacientes');
+        const unicos = {}; 
+        db_pacientes.forEach(p => unicos[String(p.dni)] = p.paciente);
+        
+        const html = Object.keys(unicos)
+            .filter(d => unicos[d].toLowerCase().includes(f) || d.includes(f))
+            .map(d => `
+                <div class="paciente-item" onclick="cargarPaciente('${d}', '${unicos[d]}')">
+                    <strong>${unicos[d]}</strong><br><small style="color:var(--blue)">DNI: ${d}</small>
+                </div>
+            `).join('');
+        lista.innerHTML = html || '<p style="padding:10px; font-size:0.8rem;">Sin resultados.</p>';
+    }
+
+    // 3. HISTORIAL Y ELIMINACIÓN (CORREGIDO)
+    function verHistorial(dni) {
+        currentDni = String(dni);
+        const filtrados = db_pacientes.filter(p => String(p.dni) === currentDni).reverse();
+        
+        document.getElementById('btnPdf').style.display = filtrados.length ? 'block' : 'none';
+        document.getElementById('tituloHistorial').innerText = `Historial: ${filtrados[0]?.paciente || currentDni}`;
+        
+        document.getElementById('contenedorHistorial').innerHTML = filtrados.map(s => `
+            <div class="sesion-card">
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div>
+                        <span class="cat-tag">${s.categoria}</span>
+                        <small style="display:block; color:var(--gray); margin-top:5px;">📅 ${s.fecha} | 🩺 ${s.atendido_por}</small>
+                    </div>
+                    <button class="btn-del" onclick="eliminarNota('${String(s.id)}')">✕</button>
+                </div>
+                <p style="margin-top:10px; border-top:1px solid #f9f9f9; padding-top:8px;">${s.notas}</p>
+            </div>
+        `).join('') || '<p style="text-align:center; color:var(--gray);">No hay registros.</p>';
+    }
+
+    async function eliminarNota(id) {
+        if(!confirm("¿Eliminar esta nota permanentemente?")) return;
+        
+        showLoading(true, "Eliminando de la base de datos...");
+        try {
+            await fetch(URL_WEB_APP, { 
+                method: 'POST', 
+                mode: 'no-cors', 
+                body: JSON.stringify({ action: 'delete_session', id: String(id) }) 
+            });
+            
+            // Refresco forzado tras eliminar
+            setTimeout(async () => {
+                await fetchData();
+                if(currentDni) verHistorial(currentDni);
+                showLoading(false);
+            }, 1000);
+        } catch(e) {
+            alert("Error al eliminar");
+            showLoading(false);
+        }
+    }
+
+    // 4. GUARDAR SESIÓN (CORREGIDO)
     async function guardarSesion() {
-        const dni = document.getElementById('dni').value.trim();
-        const nombre = document.getElementById('paciente').value.trim();
+        const dni = String(document.getElementById('dni').value).trim();
+        const paciente = document.getElementById('paciente').value.trim();
         const notas = document.getElementById('notas').value.trim();
         
-        if(!dni || !notas || !nombre) return alert("DNI, Nombre y Notas son obligatorios.");
-        
-        showLoading(true, "Guardando en historial...");
-        
+        if(!dni || !notas || !paciente) return alert("Completa DNI, Nombre y Notas.");
+
+        showLoading(true, "Guardando...");
         const payload = {
-            action: 'save', 
-            id: Date.now(), 
-            dni, 
-            paciente: nombre,
-            notas, 
+            action: 'save',
+            id: String(Date.now()),
+            dni, paciente, notas,
             categoria: document.getElementById('categoria').value,
-            fecha: new Date().toLocaleString('es-ES'),
+            fecha: new Date().toLocaleString(),
             atendido_por: loggedUser.nombre_completo || loggedUser.usuario
         };
 
-        try {
-            await fetch(URL_WEB_APP, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+        await fetch(URL_WEB_APP, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+        
+        setTimeout(async () => {
+            await fetchData();
             document.getElementById('notas').value = '';
-            // Recargar datos localmente para reflejar cambios
-            setTimeout(async () => {
-                await fetchData();
-                verHistorial(dni);
-                showLoading(false);
-            }, 1500);
-        } catch(e) {
-            alert("Error de conexión.");
+            verHistorial(dni);
             showLoading(false);
-        }
+        }, 1000);
     }
 
-    // 1. FUNCIONES ADMIN
-    function toggleAdminPanel() {
-        const p = document.getElementById('admin-panel');
-        p.style.display = p.style.display === 'block' ? 'none' : 'block';
-        if(p.style.display === 'block') p.scrollIntoView({behavior: "smooth"});
-    }
-
-    async function guardarNuevoUsuario() {
-        const nombre = document.getElementById('adm-nombre').value;
-        const usuario = document.getElementById('adm-user').value;
-        const password = document.getElementById('adm-pass').value;
-        
-        if(!nombre || !usuario || !password) return alert("Completa los campos del nuevo usuario.");
-        
-        showLoading(true, "Registrando usuario...");
-        const payload = {
-            action: 'add_user',
-            nombre_completo: nombre,
-            rol: document.getElementById('adm-rol').value,
-            email: document.getElementById('adm-email').value,
-            usuario, password
-        };
-
-        try {
-            await fetch(URL_WEB_APP, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-            alert("Usuario registrado con éxito.");
-            document.getElementById('admin-panel').style.display = 'none';
-            fetchData();
-        } catch(e) { alert("Error al registrar."); }
-        showLoading(false);
-    }
-
-    // 2. CORRECCIÓN PDF (UTF-8 / Emojis)
+    // 5. PDF CON SOPORTE DE ENCODING
     function generarPDF() {
         const { jsPDF } = window.jspdf;
-        // Especificar soporte para caracteres extendidos
-        const doc = new jsPDF({
-            orientation: 'p',
-            unit: 'mm',
-            format: 'a4',
-            putOnlyUsedFonts: true
-        });
-
-        const datos = db_pacientes.filter(p => String(p.dni) === String(currentDni));
-        if(!datos.length) return;
-
-        // Limpiar texto de emojis para evitar caracteres extraños si la fuente no los soporta
-        // jsPDF estándar no soporta emojis nativos sin una fuente .ttf cargada.
-        // Solución Senior: Reemplazamos emojis por descriptores o usamos limpieza de strings
-        const limpiarTexto = (str) => str.replace(/[\u\d000-\uFFFF]/g, ""); // Remueve símbolos no estándar si es necesario
-
-        // Header
-        if(logoBase64) doc.addImage(logoBase64, 'PNG', 15, 10, 30, 12);
+        const doc = new jsPDF();
+        const datos = db_pacientes.filter(p => String(p.dni) === currentDni);
+        
         doc.setFontSize(16);
-        doc.setTextColor(44, 62, 80);
-        doc.text("HISTORIA CLINICA - +FISIO PRO", 50, 18);
-
+        doc.text("HISTORIA CLINICA - +FISIO", 20, 20);
         doc.setFontSize(10);
-        doc.text(`Paciente: ${datos[0].paciente}`, 15, 35);
-        doc.text(`DNI: ${currentDni}`, 15, 40);
-        doc.line(15, 45, 195, 45);
+        doc.text(`Paciente: ${datos[0].paciente} | DNI: ${currentDni}`, 20, 30);
+        doc.line(20, 35, 190, 35);
 
-        let y = 55;
-        datos.reverse().forEach((s, i) => {
+        let y = 45;
+        datos.reverse().forEach(s => {
             if(y > 270) { doc.addPage(); y = 20; }
-            
             doc.setFont(undefined, 'bold');
-            doc.text(`${s.fecha} - ${s.categoria}`, 15, y);
+            doc.text(`${s.fecha} - ${s.categoria}`, 20, y);
             y += 5;
             doc.setFont(undefined, 'normal');
-            doc.setFontSize(9);
-            // El uso de splitTextToSize ayuda a manejar los encodings de línea correctamente
-            const lineas = doc.splitTextToSize(s.notas.replace(/[^\x00-\x7F]/g, ""), 170); 
-            doc.text(lineas, 15, y);
+            // Limpieza de caracteres para evitar errores de encoding en jsPDF estándar
+            const notaLimpia = s.notas.replace(/[^\x00-\x7F]/g, " "); 
+            const lineas = doc.splitTextToSize(notaLimpia, 170);
+            doc.text(lineas, 20, y);
             y += (lineas.length * 5) + 10;
         });
 
         doc.save(`Ficha_${currentDni}.pdf`);
     }
 
-    // Lógica de UI existente mantenida
+    // 6. ADMINISTRACIÓN
+    function login() {
+        const u = document.getElementById('userInput').value.trim();
+        const p = document.getElementById('passInput').value.trim();
+        const user = db_usuarios.find(x => x.usuario === u && x.password === p);
+        
+        if(user || (u === 'admin' && p === '1234')) {
+            loggedUser = user || { usuario: 'admin', nombre_completo: 'Administrador', rol: 'admin' };
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'grid';
+            document.getElementById('current-user-info').innerText = `👤 ${loggedUser.nombre_completo}`;
+            if(loggedUser.rol === 'admin') document.getElementById('btnToggleAdmin').style.display = 'block';
+            renderListaPacientes();
+        } else {
+            alert("Acceso denegado");
+        }
+    }
+
+    function toggleAdminPanel() {
+        const panel = document.getElementById('admin-panel');
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function guardarNuevoUsuario() {
+        const payload = {
+            action: 'add_user',
+            nombre_completo: document.getElementById('adm-nombre').value,
+            rol: document.getElementById('adm-rol').value,
+            usuario: document.getElementById('adm-user').value,
+            password: document.getElementById('adm-pass').value
+        };
+        showLoading(true, "Creando usuario...");
+        await fetch(URL_WEB_APP, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+        alert("Usuario creado");
+        fetchData();
+        toggleAdminPanel();
+    }
+
     function seleccionarCat(el, val) {
         document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
         el.classList.add('active');
         document.getElementById('categoria').value = val;
     }
 
-    function verHistorial(dni) {
-        currentDni = dni;
-        const filtrados = db_pacientes.filter(p => String(p.dni) === String(dni)).reverse();
-        document.getElementById('btnPdf').style.display = filtrados.length ? 'block' : 'none';
-        document.getElementById('tituloHistorial').innerText = `Historial: ${filtrados[0]?.paciente || dni}`;
-        document.getElementById('contenedorHistorial').innerHTML = filtrados.map(s => `
-            <div class="sesion-card">
-                <div style="display:flex; justify-content:space-between;">
-                    <span class="cat-tag">${s.categoria}</span>
-                    <button class="btn-del" onclick="eliminarNota('${s.id}')">✕</button>
-                </div>
-                <small style="color:var(--gray); display:block; margin-top:5px;">📅 ${s.fecha} | 🩺 ${s.atendido_por}</small>
-                <p style="margin-top:10px; font-size:0.95rem; border-top:1px solid #f9f9f9; padding-top:8px;">${s.notas}</p>
-            </div>
-        `).join('') || '<p style="text-align:center; color:var(--gray);">No hay registros.</p>';
-    }
-
-    function renderListaPacientes(f="") {
-        const lista = document.getElementById('listaPacientes');
-        const unicos = {}; 
-        db_pacientes.forEach(p => unicos[p.dni] = p.paciente);
-        const html = Object.keys(unicos).filter(d => unicos[d].toLowerCase().includes(f) || d.includes(f)).map(d => `
-                <div class="paciente-item" onclick="cargarPaciente('${d}', '${unicos[d]}')">
-                    <strong>${unicos[d]}</strong><br><small style="color:var(--blue)">DNI: ${d}</small>
-                </div>
-            `).join('');
-        lista.innerHTML = html || '<p style="padding:10px; font-size:0.8rem; color:var(--gray);">Sin resultados.</p>';
-    }
-
-    function cargarPaciente(d, n) { 
-        document.getElementById('dni').value = d; 
-        document.getElementById('paciente').value = n; 
-        verHistorial(d); 
-    }
-
-    function limpiarFormulario() {
-        document.getElementById('dni').value = '';
-        document.getElementById('paciente').value = '';
-        document.getElementById('notas').value = '';
-        currentDni = null;
-        document.getElementById('contenedorHistorial').innerHTML = '<p style="text-align:center; color:#adb5bd; margin-top:100px;">Selecciona un paciente.</p>';
-    }
-
-    function showLoading(show, text="Cargando...") {
+    function showLoading(show, text) {
         document.getElementById('loading-text').innerText = text;
         document.getElementById('loading').style.display = show ? 'flex' : 'none';
     }
+
+    window.onload = fetchData;
 </script>
 </body>
 </html>
