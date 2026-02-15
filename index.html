@@ -191,7 +191,7 @@
 
     function finalizarPDF(doc, datos) {
         doc.setFontSize(18); doc.setTextColor(44, 62, 80);
-        doc.text("+FISIO | HISTORIAL CLÍNICO", 20, 20);
+        doc.text("+FISIO | HISTORIA FISIOTERAPÉUTICA", 20, 20);
         doc.setFontSize(10); doc.setTextColor(100);
         doc.text(`PACIENTE: ${datos[0].paciente}`, 20, 30);
         doc.text(`DNI: ${currentDni} | Fecha emisión: ${new Date().toLocaleDateString()}`, 20, 35);
@@ -241,5 +241,3 @@
 </script>
 </body>
 </html>
-
-
