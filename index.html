@@ -93,7 +93,7 @@
             <div class="cat-grid">
                 <div class="cat-btn active" onclick="seleccionarCat(this, 'Fisioterapia Traumatologica')"><span>🦴</span>Trauma</div>
                 <div class="cat-btn" onclick="seleccionarCat(this, 'Fisioterapia Reumatologica')"><span>💧</span>Reuma</div>
-                <div class="cat-btn" onclick="seleccionarCat(this, 'Fisioterapia Neuropediatrica')"><span>👶</span>Neuro Pedia</div>
+                <div class="cat-btn" onclick="seleccionarCat(this, 'Fisioterapia Neuropediatrica')"><span>👶</span>Neuro Pediátrico</div>
                 <div class="cat-btn" onclick="seleccionarCat(this, 'Fisioterapia Neuro adultos')"><span>🧠</span>Neuro Adultos</div>
             </div>
             <input type="hidden" id="categoria" value="Fisioterapia Traumatologica">
@@ -306,7 +306,7 @@
         img.src = LOGO_PATH;
         img.onload = function() {
             const ratio = Math.min(40 / img.width, 20 / img.height);
-            try { doc.addImage(img, 'PNG', 190 - (img.width*ratio), 10, img.width*ratio, img.height*ratio); } catch(e){}
+            try { doc.addImage(img, 'PNG', 300 - (img.width*ratio), 10, img.width*ratio, img.height*ratio); } catch(e){}
             finalizarPDF(doc, datos);
         };
         img.onerror = () => finalizarPDF(doc, datos);
@@ -343,3 +343,4 @@
 </script>
 </body>
 </html>
+
