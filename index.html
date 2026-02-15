@@ -34,13 +34,27 @@
         input, textarea { width: 100%; padding: 12px; margin: 8px 0 16px 0; border: 1.5px solid #e0e6ed; border-radius: 8px; font-size: 0.95rem; box-sizing: border-box; outline: none; transition: 0.3s; }
         input:focus, textarea:focus { border-color: var(--blue); }
 
-        /* GRID CATEGORÍAS */
-        .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .cat-btn { background: #f8f9fa; border: 2px solid #e0e6ed; padding: 12px 5px; border-radius: 10px; text-align: center; cursor: pointer; font-size: 0.75rem; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 5px; transition: 0.2s; }
-        .cat-btn span { font-size: 1.2rem; }
+        /* GRID CATEGORÍAS - TAMAÑO REDUCIDO */
+        .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+        .cat-btn { 
+            background: #f8f9fa; 
+            border: 2px solid #e0e6ed; 
+            padding: 8px 4px; /* Reducido de 12px 5px */
+            border-radius: 8px; 
+            text-align: center; 
+            cursor: pointer; 
+            font-size: 0.7rem; /* Reducido de 0.75rem */
+            font-weight: 600; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 4px; /* Reducido de 5px */
+            transition: 0.2s; 
+        }
+        .cat-btn span { font-size: 1rem; /* Reducido de 1.2rem */ }
         .cat-btn.active { background: var(--blue); color: white; border-color: var(--blue); box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3); }
 
-        /* BOTONES */
+        /* BOTONES GENERALES */
         .btn-save { background: var(--accent); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
         .btn-save:disabled { background: #bdc3c7; cursor: not-allowed; }
         .btn-clear { background: #f1f3f5; color: var(--gray); border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: bold; }
@@ -93,7 +107,7 @@
             <div class="cat-grid">
                 <div class="cat-btn active" onclick="seleccionarCat(this, 'Fisioterapia Traumatologica')"><span>🦴</span>Trauma</div>
                 <div class="cat-btn" onclick="seleccionarCat(this, 'Fisioterapia Reumatologica')"><span>💧</span>Reuma</div>
-                <div class="cat-btn" onclick="seleccionarCat(this, 'Fisioterapia Neuropediatrica')"><span>👶</span>Neuro Pediátrico</div>
+                <div class="cat-btn" onclick="seleccionarCat(this, 'Fisioterapia Neuropediatrica')"><span>👶</span>Neuro Pedia</div>
                 <div class="cat-btn" onclick="seleccionarCat(this, 'Fisioterapia Neuro adultos')"><span>🧠</span>Neuro Adultos</div>
             </div>
             <input type="hidden" id="categoria" value="Fisioterapia Traumatologica">
@@ -126,42 +140,30 @@
     const LOGO_PATH = "logo.png";
     let db_pacientes = [], db_usuarios = [], loggedUser = null, currentDni = null;
 
-    // INICIO: Carga de datos
     async function fetchData() {
         const btn = document.getElementById('btnLogin');
         const status = document.getElementById('status-msg');
-        
         try {
             console.log("Iniciando conexión...");
             const r = await fetch(URL_WEB_APP);
             const data = await r.json();
-            
-            // Verificamos si la respuesta es válida
             if(!data.usuarios || !data.pacientes) throw new Error("Formato de datos inválido");
-
             db_pacientes = data.pacientes;
             db_usuarios = data.usuarios;
-            
-            // Habilitar botón de login
             btn.disabled = false;
             btn.innerText = "ENTRAR AL SISTEMA";
             btn.style.background = "var(--accent)";
             status.innerText = "✅ Conexión establecida";
             status.style.color = "green";
-            console.log("Datos cargados:", db_usuarios.length, "usuarios");
-
             if(loggedUser) renderListaPacientes();
-
         } catch(e) { 
             console.error(e);
             btn.innerText = "ERROR DE CONEXIÓN";
             btn.style.background = "var(--danger)";
             status.innerText = "❌ Fallo al cargar. Revisa tu internet.";
             status.style.color = "red";
-            
-            // BACKDOOR: Habilitar login de emergencia para pruebas
             btn.disabled = false; 
-            btn.onclick = () => login(true); // Modo offline
+            btn.onclick = () => login(true);
         }
         document.getElementById('loading').style.display = 'none';
     }
@@ -169,14 +171,7 @@
     function login(offline = false) {
         const uIn = document.getElementById('userInput').value.trim();
         const pIn = document.getElementById('passInput').value.trim();
-        
-        // 1. INTENTO DE LOGIN NORMAL
-        const found = db_usuarios.find(u => 
-            String(u.usuario).toLowerCase() === uIn.toLowerCase() && 
-            String(u.password) == pIn
-        );
-
-        // 2. INTENTO DE LOGIN MAESTRO (PARA PRUEBAS)
+        const found = db_usuarios.find(u => String(u.usuario).toLowerCase() === uIn.toLowerCase() && String(u.password) == pIn);
         if (found) {
             acceder(found);
         } else if (uIn === "admin" && pIn === "1234") {
@@ -195,7 +190,6 @@
         renderListaPacientes();
     }
 
-    // INTERFAZ Y LÓGICA
     function seleccionarCat(el, val) {
         document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
         el.classList.add('active');
@@ -216,11 +210,8 @@
     async function guardarSesion() {
         const dni = document.getElementById('dni').value.trim();
         const notas = document.getElementById('notas').value.trim();
-        
         if(!dni || !notas) return alert("Completa DNI y Notas.");
-
         showLoading(true, "Guardando evolución...");
-        
         const payload = {
             action: 'save', id: Date.now(), dni, 
             paciente: document.getElementById('paciente').value.trim(),
@@ -228,15 +219,13 @@
             fecha: new Date().toLocaleString(),
             atendido_por: loggedUser.nombre_completo || loggedUser.usuario
         };
-
         try {
             await fetch(URL_WEB_APP, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
             document.getElementById('notas').value = '';
-            // Recargamos datos en segundo plano
             setTimeout(() => { 
                 fetchData().then(() => {
                     showLoading(false);
-                    if(currentDni === dni) verHistorial(dni); // Refrescar si estamos viendo ese paciente
+                    if(currentDni === dni) verHistorial(dni);
                 });
             }, 1500);
         } catch(e) {
@@ -250,7 +239,6 @@
         const filtrados = db_pacientes.filter(p => String(p.dni) === String(dni)).reverse();
         document.getElementById('btnPdf').style.display = filtrados.length ? 'block' : 'none';
         document.getElementById('tituloHistorial').innerText = `Historial: ${filtrados[0]?.paciente || dni}`;
-        
         document.getElementById('contenedorHistorial').innerHTML = filtrados.map(s => `
             <div class="sesion-card">
                 <div style="display:flex; justify-content:space-between;">
@@ -265,24 +253,17 @@
 
     function renderListaPacientes(f="") {
         const lista = document.getElementById('listaPacientes');
-        const unicos = {}; 
-        db_pacientes.forEach(p => unicos[p.dni] = p.paciente);
-        
-        const html = Object.keys(unicos)
-            .filter(d => unicos[d].toLowerCase().includes(f) || d.includes(f))
-            .map(d => `
+        const unicos = {}; db_pacientes.forEach(p => unicos[p.dni] = p.paciente);
+        const html = Object.keys(unicos).filter(d => unicos[d].toLowerCase().includes(f) || d.includes(f)).map(d => `
                 <div class="paciente-item" onclick="cargarPaciente('${d}', '${unicos[d]}')">
                     <strong>${unicos[d]}</strong><br><small style="color:var(--blue)">DNI: ${d}</small>
                 </div>
             `).join('');
-        
         lista.innerHTML = html || '<p style="padding:10px; font-size:0.8rem; color:var(--gray);">Sin resultados.</p>';
     }
 
     function cargarPaciente(d, n) { 
-        document.getElementById('dni').value = d; 
-        document.getElementById('paciente').value = n; 
-        verHistorial(d); 
+        document.getElementById('dni').value = d; document.getElementById('paciente').value = n; verHistorial(d); 
     }
 
     async function eliminarNota(id) {
@@ -297,7 +278,6 @@
         }, 1500);
     }
 
-    // PDF GEN
     function generarPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
@@ -343,4 +323,3 @@
 </script>
 </body>
 </html>
-
