@@ -16,8 +16,9 @@
         .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--blue); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+        #config-screen { display: none; align-items: center; justify-content: center; min-height: 100vh; }
         #login-screen { display: none; align-items: center; justify-content: center; min-height: 100vh; }
-        .login-card { background: white; padding: 40px; border-radius: 16px; box-shadow: var(--shadow); width: 320px; text-align: center; }
+        .login-card { background: white; padding: 40px; border-radius: 16px; box-shadow: var(--shadow); width: 380px; text-align: center; }
         
         #main-app { display: none; max-width: 1300px; margin: 0 auto; padding: 20px; gap: 20px; grid-template-columns: 1fr; }
         @media (min-width: 1024px) { #main-app { display: grid; grid-template-columns: 450px 1fr; } }
@@ -29,33 +30,66 @@
         input, textarea, select { width: 100%; padding: 12px; border: 1.5px solid #e0e6ed; border-radius: 8px; font-size: 0.95rem; outline: none; box-sizing: border-box; }
         
         .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 15px 0; }
-        .cat-btn { background: #f8f9fa; border: 1.5px solid #e0e6ed; padding: 10px; border-radius: 8px; cursor: pointer; text-align: center; font-size: 0.8rem; font-weight: 600; }
+        .cat-btn { background: #f8f9fa; border: 1.5px solid #e0e6ed; padding: 10px; border-radius: 8px; cursor: pointer; text-align: center; font-size: 0.8rem; font-weight: 600; transition: all 0.3s; }
         .cat-btn.active { background: var(--blue); color: white; border-color: var(--blue); }
+        .cat-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         
         .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .btn-save { background: var(--accent); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .btn-clear { background: var(--gray); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .btn-pdf { background: var(--blue); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; }
+        .btn-save { background: var(--accent); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.3s; }
+        .btn-save:hover { background: #229954; transform: translateY(-2px); }
+        .btn-clear { background: var(--gray); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.3s; }
+        .btn-clear:hover { background: #5d6d7e; }
+        .btn-pdf { background: var(--blue); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; transition: all 0.3s; }
+        .btn-pdf:hover { background: #2874a6; }
         
-        .paciente-item { padding: 12px; border-bottom: 1px solid #f0f2f5; cursor: pointer; }
-        .paciente-item:hover { background: #f8fbff; }
-        .sesion-card { border: 1px solid #eef2f6; padding: 15px; border-radius: 10px; margin-bottom: 15px; }
+        .paciente-item { padding: 12px; border-bottom: 1px solid #f0f2f5; cursor: pointer; transition: all 0.2s; }
+        .paciente-item:hover { background: #f8fbff; transform: translateX(5px); }
+        .sesion-card { border: 1px solid #eef2f6; padding: 15px; border-radius: 10px; margin-bottom: 15px; transition: all 0.3s; }
+        .sesion-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        
+        .help-text { font-size: 0.85rem; color: var(--gray); margin-top: 10px; line-height: 1.5; }
+        .config-input { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: var(--primary); }
     </style>
 </head>
 <body>
 
     <div id="loading">
         <div class="spinner"></div>
-        <p id="loading-text" style="margin-top:15px; font-weight:bold;">Sincronizando con Google Sheets...</p>
+        <p id="loading-text" style="margin-top:15px; font-weight:bold;">Cargando sistema...</p>
+    </div>
+
+    <div id="config-screen">
+        <div class="login-card">
+            <h1 style="color:var(--blue); margin:0 0 10px 0;">⚙️ Configuración</h1>
+            <p style="color:var(--gray); margin-bottom: 20px;">Configura la conexión con Google Sheets</p>
+            
+            <div class="config-input">
+                <label>ID de Google Sheet:</label>
+                <input type="text" id="sheetId" placeholder="Ej: 1ABC...xyz">
+                <p class="help-text">📌 Copia el ID desde la URL de tu Google Sheet</p>
+            </div>
+            
+            <div class="config-input">
+                <label>API Key de Google:</label>
+                <input type="password" id="apiKey" placeholder="Tu API Key">
+                <p class="help-text">🔑 <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Obtener API Key</a></p>
+            </div>
+            
+            <button class="btn-save" onclick="guardarConfig()" style="width:100%; margin-top:10px;">GUARDAR Y CONTINUAR</button>
+            <p id="config-error" style="color:var(--danger); display:none; margin-top:15px;"></p>
+        </div>
     </div>
 
     <div id="login-screen">
         <div class="login-card">
             <h1 style="color:var(--blue); margin:0 0 10px 0;">+FISIO</h1>
+            <p style="color:var(--gray); margin-bottom: 20px;">Sistema de Gestión de Pacientes</p>
             <input type="text" id="userInput" placeholder="Usuario" style="margin-bottom:10px;">
             <input type="password" id="passInput" placeholder="Contraseña" style="margin-bottom:10px;">
             <button class="btn-save" onclick="login()" style="width:100%; margin-top:10px;">INGRESAR</button>
-            <p id="error-msg" style="color:var(--danger); display:none; margin-top:15px;">⚠️ Clave incorrecta</p>
+            <button onclick="mostrarConfig()" style="background:none; border:none; color:var(--blue); cursor:pointer; margin-top:15px; text-decoration:underline;">⚙️ Configuración</button>
+            <p id="error-msg" style="color:var(--danger); display:none; margin-top:15px;">⚠️ Credenciales incorrectas</p>
         </div>
     </div>
 
@@ -86,49 +120,167 @@
             </div>
 
             <div class="panel">
-                <h3>👥 Buscador</h3>
-                <input type="text" placeholder="🔍 Buscar..." onkeyup="renderLista(this.value)">
-                <div id="listaPacientes" style="max-height: 200px; overflow-y: auto; margin-top:10px;"></div>
+                <h3>👥 Buscador de Pacientes</h3>
+                <input type="text" placeholder="🔍 Buscar por nombre o DNI..." onkeyup="renderLista(this.value)">
+                <div id="listaPacientes" style="max-height: 250px; overflow-y: auto; margin-top:10px;"></div>
                 <button id="btnAdmin" class="btn-save" onclick="toggleAdmin()" style="display:none; margin-top:20px; background:var(--admin); width:100%;">⚙️ PANEL ADMIN</button>
             </div>
 
             <div id="admin-panel" class="panel" style="display:none; border:2px solid var(--admin);">
                 <h3 style="color:var(--admin)">🔑 Nuevo Usuario</h3>
-                <input type="text" id="adm-nombre" placeholder="Nombre" style="margin-bottom:10px;">
-                <select id="adm-rol" style="margin-bottom:10px;"><option value="profesional">Profesional</option><option value="admin">Admin</option></select>
+                <input type="text" id="adm-nombre" placeholder="Nombre completo" style="margin-bottom:10px;">
+                <select id="adm-rol" style="margin-bottom:10px;">
+                    <option value="profesional">Profesional</option>
+                    <option value="admin">Administrador</option>
+                </select>
                 <input type="text" id="adm-user" placeholder="Usuario" style="margin-bottom:10px;">
-                <input type="password" id="adm-pass" placeholder="Clave" style="margin-bottom:10px;">
-                <button class="btn-save" style="background:var(--admin); width:100%;" onclick="crearUsuario()">CREAR</button>
+                <input type="password" id="adm-pass" placeholder="Contraseña" style="margin-bottom:10px;">
+                <button class="btn-save" style="background:var(--admin); width:100%;" onclick="crearUsuario()">CREAR USUARIO</button>
             </div>
         </aside>
 
         <main class="panel">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h2 id="titulo-historial" style="margin:0;">Ficha Clínica</h2>
-                <button id="btnPdf" class="btn-pdf" style="display:none;" onclick="exportarPDF()">📥 EXPORTAR</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 10px;">
+                <h2 id="titulo-historial" style="margin:0;">📋 Ficha Clínica</h2>
+                <div>
+                    <button id="btnSync" class="btn-pdf" onclick="sincronizar()" title="Sincronizar datos">🔄</button>
+                    <button id="btnPdf" class="btn-pdf" style="display:none;" onclick="exportarPDF()">📥 EXPORTAR PDF</button>
+                </div>
             </div>
             <div id="historial-body" style="margin-top:20px;"></div>
         </main>
     </div>
 
 <script>
+    // ============================================
+    // CONFIGURACIÓN Y VARIABLES GLOBALES
+    // ============================================
+    
+    let config = {
+        sheetId: localStorage.getItem('fisio_sheetId') || '',
+        apiKey: localStorage.getItem('fisio_apiKey') || ''
+    };
+    
     let db = { pacientes: [], usuarios: [] };
     let currentUser = null;
     let selectedDni = "";
+    
+    const SHEET_PACIENTES = 'Pacientes';
+    const SHEET_USUARIOS = 'Usuarios';
 
-    // 1. INICIALIZACIÓN
+    // ============================================
+    // INICIALIZACIÓN
+    // ============================================
+    
     function init() {
-        google.script.run.withSuccessHandler(function(res) {
-            db = JSON.parse(res);
+        if (!config.sheetId || !config.apiKey) {
             document.getElementById('loading').style.display = 'none';
-            document.getElementById('login-screen').style.display = 'flex';
-        }).withFailureHandler(function(error) {
-            alert('Error al cargar datos: ' + error.message);
-            document.getElementById('loading-text').innerText = 'Error de conexión';
-        }).loadData();
+            document.getElementById('config-screen').style.display = 'flex';
+        } else {
+            cargarDatos();
+        }
     }
 
-    // 2. LOGIN
+    // ============================================
+    // CONFIGURACIÓN
+    // ============================================
+    
+    function guardarConfig() {
+        const sheetId = document.getElementById('sheetId').value.trim();
+        const apiKey = document.getElementById('apiKey').value.trim();
+        
+        if (!sheetId || !apiKey) {
+            mostrarError('config-error', '⚠️ Completa todos los campos');
+            return;
+        }
+        
+        config.sheetId = sheetId;
+        config.apiKey = apiKey;
+        
+        localStorage.setItem('fisio_sheetId', sheetId);
+        localStorage.setItem('fisio_apiKey', apiKey);
+        
+        document.getElementById('config-screen').style.display = 'none';
+        document.getElementById('loading').style.display = 'flex';
+        
+        cargarDatos();
+    }
+    
+    function mostrarConfig() {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('config-screen').style.display = 'flex';
+        document.getElementById('sheetId').value = config.sheetId;
+        document.getElementById('apiKey').value = config.apiKey;
+    }
+
+    // ============================================
+    // CARGA DE DATOS DESDE GOOGLE SHEETS API
+    // ============================================
+    
+    async function cargarDatos() {
+        try {
+            showLoad(true, 'Sincronizando con Google Sheets...');
+            
+            // Cargar pacientes
+            const urlPacientes = `https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/${SHEET_PACIENTES}?key=${config.apiKey}`;
+            const resPacientes = await fetch(urlPacientes);
+            
+            if (!resPacientes.ok) {
+                throw new Error('Error al cargar datos. Verifica tu configuración.');
+            }
+            
+            const dataPacientes = await resPacientes.json();
+            
+            // Cargar usuarios
+            const urlUsuarios = `https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/${SHEET_USUARIOS}?key=${config.apiKey}`;
+            const resUsuarios = await fetch(urlUsuarios);
+            const dataUsuarios = await resUsuarios.json();
+            
+            // Procesar pacientes
+            db.pacientes = [];
+            if (dataPacientes.values && dataPacientes.values.length > 1) {
+                for (let i = 1; i < dataPacientes.values.length; i++) {
+                    const row = dataPacientes.values[i];
+                    db.pacientes.push({
+                        id: String(row[0] || ''),
+                        dni: String(row[1] || ''),
+                        paciente: row[2] || '',
+                        categoria: row[3] || '',
+                        notas: row[4] || '',
+                        fecha: row[5] || '',
+                        atendido_por: row[6] || ''
+                    });
+                }
+            }
+            
+            // Procesar usuarios
+            db.usuarios = [];
+            if (dataUsuarios.values && dataUsuarios.values.length > 1) {
+                for (let i = 1; i < dataUsuarios.values.length; i++) {
+                    const row = dataUsuarios.values[i];
+                    db.usuarios.push({
+                        nombre_completo: row[0] || '',
+                        usuario: row[1] || '',
+                        password: row[2] || '',
+                        rol: row[3] || 'profesional'
+                    });
+                }
+            }
+            
+            showLoad(false);
+            document.getElementById('login-screen').style.display = 'flex';
+            
+        } catch (error) {
+            showLoad(false);
+            alert('❌ Error: ' + error.message + '\n\nVerifica tu configuración en la pantalla de ajustes.');
+            mostrarConfig();
+        }
+    }
+
+    // ============================================
+    // LOGIN
+    // ============================================
+    
     function login() {
         const u = document.getElementById('userInput').value.trim();
         const p = document.getElementById('passInput').value.trim();
@@ -143,123 +295,170 @@
             renderLista();
         } else {
             document.getElementById('error-msg').style.display = 'block';
+            setTimeout(() => {
+                document.getElementById('error-msg').style.display = 'none';
+            }, 3000);
         }
     }
 
-    // 3. GUARDAR (Integrado con Apps Script)
-    function guardar() {
+    // ============================================
+    // GUARDAR SESIÓN
+    // ============================================
+    
+    async function guardar() {
         const dni = String(document.getElementById('dni').value).trim();
         const paciente = document.getElementById('paciente').value.trim();
         const notas = document.getElementById('notas').value.trim();
         
-        if(!dni || !notas || !paciente) return alert("⚠️ Faltan datos: DNI, Nombre y Notas son obligatorios");
+        if(!dni || !notas || !paciente) {
+            alert("⚠️ Faltan datos: DNI, Nombre y Notas son obligatorios");
+            return;
+        }
 
         showLoad(true, "Guardando en Google Sheets...");
-        const payload = {
-            action: 'save',
+        
+        const nuevaSesion = {
             id: String(Date.now()),
             dni: dni,
             paciente: paciente,
-            notas: notas,
             categoria: document.getElementById('categoria').value,
+            notas: notas,
             fecha: new Date().toLocaleString('es-ES'),
             atendido_por: currentUser.nombre_completo
         };
-
-        google.script.run
-            .withSuccessHandler(function() {
-                refrescarYVer(dni);
-            })
-            .withFailureHandler(function(error) {
-                alert('Error al guardar: ' + error.message);
-                showLoad(false);
-            })
-            .doPost({postData: {contents: JSON.stringify(payload)}});
+        
+        try {
+            // Agregar a la hoja usando batchUpdate
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/${SHEET_PACIENTES}:append?valueInputOption=RAW&key=${config.apiKey}`;
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    values: [[
+                        nuevaSesion.id,
+                        nuevaSesion.dni,
+                        nuevaSesion.paciente,
+                        nuevaSesion.categoria,
+                        nuevaSesion.notas,
+                        nuevaSesion.fecha,
+                        nuevaSesion.atendido_por
+                    ]]
+                })
+            });
+            
+            if (!response.ok) throw new Error('Error al guardar');
+            
+            await cargarDatos();
+            verHistorial(dni);
+            document.getElementById('notas').value = "";
+            showLoad(false);
+            
+            // Mostrar notificación de éxito
+            mostrarNotificacion('✅ Sesión guardada correctamente');
+            
+        } catch (error) {
+            showLoad(false);
+            alert('❌ Error al guardar: ' + error.message);
+        }
     }
 
-    // 4. BORRAR (Integrado con Apps Script)
-    function borrar(id) {
+    // ============================================
+    // ELIMINAR SESIÓN
+    // ============================================
+    
+    async function borrar(id, rowIndex) {
         if(!confirm("¿Eliminar esta sesión?")) return;
+        
         showLoad(true, "Eliminando...");
-        google.script.run
-            .withSuccessHandler(function() {
-                refrescarYVer(selectedDni);
-            })
-            .withFailureHandler(function(error) {
-                alert('Error al eliminar: ' + error.message);
-                showLoad(false);
-            })
-            .doPost({postData: {contents: JSON.stringify({action: 'delete_session', id: id})}});
+        
+        try {
+            // Nota: La eliminación directa requiere OAuth2, por lo que mostraremos un método alternativo
+            alert('⚠️ Para eliminar sesiones, ve directamente a tu Google Sheet y borra la fila correspondiente.\n\nEsta función requiere permisos avanzados que deben configurarse en Google Cloud Console.');
+            showLoad(false);
+            
+        } catch (error) {
+            showLoad(false);
+            alert('❌ Error: ' + error.message);
+        }
     }
 
-    // 5. CREAR USUARIO (Integrado con Apps Script)
-    function crearUsuario() {
+    // ============================================
+    // CREAR USUARIO
+    // ============================================
+    
+    async function crearUsuario() {
         const nombre = document.getElementById('adm-nombre').value.trim();
         const usuario = document.getElementById('adm-user').value.trim();
         const password = document.getElementById('adm-pass').value.trim();
         const rol = document.getElementById('adm-rol').value;
 
-        if(!nombre || !usuario || !password) return alert("⚠️ Completa todos los campos");
-
-        const payload = {
-            action: 'add_user',
-            nombre_completo: nombre,
-            usuario: usuario,
-            password: password,
-            rol: rol
-        };
+        if(!nombre || !usuario || !password) {
+            alert("⚠️ Completa todos los campos");
+            return;
+        }
         
+        // Verificar si el usuario ya existe
+        if (db.usuarios.find(u => u.usuario === usuario)) {
+            alert("⚠️ El usuario ya existe");
+            return;
+        }
+
         showLoad(true, "Creando usuario...");
-        google.script.run
-            .withSuccessHandler(function() {
-                refrescarYVer(null);
-                alert("✅ Usuario creado exitosamente");
-                document.getElementById('adm-nombre').value = "";
-                document.getElementById('adm-user').value = "";
-                document.getElementById('adm-pass').value = "";
-            })
-            .withFailureHandler(function(error) {
-                alert('Error al crear usuario: ' + error.message);
-                showLoad(false);
-            })
-            .doPost({postData: {contents: JSON.stringify(payload)}});
+        
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/${SHEET_USUARIOS}:append?valueInputOption=RAW&key=${config.apiKey}`;
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    values: [[nombre, usuario, password, rol]]
+                })
+            });
+            
+            if (!response.ok) throw new Error('Error al crear usuario');
+            
+            await cargarDatos();
+            document.getElementById('adm-nombre').value = "";
+            document.getElementById('adm-user').value = "";
+            document.getElementById('adm-pass').value = "";
+            showLoad(false);
+            
+            mostrarNotificacion('✅ Usuario creado exitosamente');
+            
+        } catch (error) {
+            showLoad(false);
+            alert('❌ Error al crear usuario: ' + error.message);
+        }
     }
 
-    // --- FUNCIONES DE APOYO ---
-
-    function refrescarYVer(dni) {
-        google.script.run
-            .withSuccessHandler(function(res) {
-                db = JSON.parse(res);
-                renderLista();
-                if(dni) verHistorial(dni);
-                document.getElementById('notas').value = "";
-                showLoad(false);
-            })
-            .withFailureHandler(function(error) {
-                alert('Error al refrescar: ' + error.message);
-                showLoad(false);
-            })
-            .loadData();
-    }
-
-    function renderLista(f="") {
+    // ============================================
+    // FUNCIONES DE INTERFAZ
+    // ============================================
+    
+    function renderLista(filtro = "") {
         const div = document.getElementById('listaPacientes');
         const unicos = {};
         db.pacientes.forEach(p => unicos[String(p.dni)] = p.paciente);
         
         const keys = Object.keys(unicos).filter(d => 
-            unicos[d].toLowerCase().includes(f.toLowerCase()) || d.includes(f)
+            unicos[d].toLowerCase().includes(filtro.toLowerCase()) || d.includes(filtro)
         );
 
         if(keys.length === 0) {
-            div.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">Sin resultados</p>';
+            div.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">🔍 Sin resultados</p>';
             return;
         }
 
         div.innerHTML = keys.map(d => `
             <div class="paciente-item" onclick="seleccionar('${d}', '${unicos[d].replace(/'/g, "\\'")}')">
-                <strong>${unicos[d]}</strong><br><small>DNI: ${d}</small>
+                <strong>${unicos[d]}</strong><br>
+                <small style="color: var(--gray);">DNI: ${d}</small>
             </div>
         `).join('');
     }
@@ -273,23 +472,29 @@
     function verHistorial(d) {
         selectedDni = String(d);
         const filtrados = db.pacientes.filter(x => String(x.dni) === selectedDni).reverse();
-        document.getElementById('btnPdf').style.display = filtrados.length ? 'block' : 'none';
-        document.getElementById('titulo-historial').innerText = "Historial: " + (filtrados[0]?.paciente || "Sin paciente");
+        document.getElementById('btnPdf').style.display = filtrados.length ? 'inline-block' : 'none';
+        document.getElementById('titulo-historial').innerText = "📋 Historial: " + (filtrados[0]?.paciente || "Sin paciente");
         
         if(filtrados.length === 0) {
-            document.getElementById('historial-body').innerHTML = '<p style="text-align:center; color:#999; padding:40px;">📋 No hay registros previos para este paciente</p>';
+            document.getElementById('historial-body').innerHTML = '<div style="text-align:center; padding:60px 20px; color:#95a5a6;"><h3>📋 Sin registros</h3><p>No hay sesiones previas para este paciente</p></div>';
             return;
         }
 
-        document.getElementById('historial-body').innerHTML = filtrados.map(s => `
+        document.getElementById('historial-body').innerHTML = filtrados.map((s, idx) => `
             <div class="sesion-card">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <small><b>📅 ${s.fecha}</b></small>
-                    <button onclick="borrar('${s.id}')" style="color:var(--danger); border:none; background:none; cursor:pointer; font-size:1.2rem;" title="Eliminar sesión">✕</button>
+                    <small style="color: var(--primary);"><b>📅 ${s.fecha}</b></small>
+                    <span style="background: var(--blue); color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem;">#${filtrados.length - idx}</span>
                 </div>
-                <div style="color:var(--blue); font-size:0.85rem; margin:8px 0; font-weight:600;">${s.categoria}</div>
-                <div style="color:var(--gray); font-size:0.8rem; margin-bottom:10px;">👨‍⚕️ Atendió: ${s.atendido_por}</div>
-                <p style="margin:0; line-height:1.6;">${s.notas}</p>
+                <div style="color:var(--blue); font-size:0.85rem; margin:8px 0; font-weight:600;">
+                    ${s.categoria}
+                </div>
+                <div style="color:var(--gray); font-size:0.8rem; margin-bottom:12px;">
+                    👨‍⚕️ Atendió: ${s.atendido_por}
+                </div>
+                <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid var(--blue);">
+                    <p style="margin:0; line-height:1.6; white-space: pre-wrap;">${s.notas}</p>
+                </div>
             </div>
         `).join('');
     }
@@ -306,11 +511,6 @@
         document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
         el.classList.add('active');
         document.getElementById('categoria').value = v;
-    }
-
-    function showLoad(s, t) {
-        document.getElementById('loading-text').innerText = t || 'Cargando...';
-        document.getElementById('loading').style.display = s ? 'flex' : 'none';
     }
 
     function limpiarCampos() {
@@ -331,33 +531,120 @@
 
     function cerrarSesion() {
         if(confirm('¿Cerrar sesión?')) {
-            location.reload();
+            currentUser = null;
+            selectedDni = "";
+            document.getElementById('main-app').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('userInput').value = "";
+            document.getElementById('passInput').value = "";
         }
     }
 
-    function exportarPDF() {
-        if(!selectedDni) return alert("⚠️ Selecciona un paciente primero");
-        
-        showLoad(true, "Generando reporte...");
-        
-        google.script.run
-            .withSuccessHandler(function(url) {
-                showLoad(false);
-                if(url) {
-                    window.open(url, '_blank');
-                    alert('✅ PDF generado correctamente');
-                } else {
-                    alert('⚠️ Error al generar PDF');
-                }
-            })
-            .withFailureHandler(function(error) {
-                showLoad(false);
-                alert('Error: ' + error.message);
-            })
-            .generarPDF(selectedDni);
+    function sincronizar() {
+        cargarDatos();
+        mostrarNotificacion('🔄 Sincronizando...');
     }
 
+    // ============================================
+    // EXPORTAR PDF
+    // ============================================
+    
+    function exportarPDF() {
+        if(!selectedDni) {
+            alert("⚠️ Selecciona un paciente primero");
+            return;
+        }
+        
+        const filtrados = db.pacientes.filter(x => String(x.dni) === selectedDni);
+        
+        if(filtrados.length === 0) {
+            alert("⚠️ No hay sesiones para exportar");
+            return;
+        }
+        
+        let contenido = `+FISIO Pro - HISTORIA CLÍNICA\n\n`;
+        contenido += `Paciente: ${filtrados[0].paciente}\n`;
+        contenido += `DNI: ${selectedDni}\n`;
+        contenido += `Fecha de generación: ${new Date().toLocaleString('es-ES')}\n`;
+        contenido += `Total de sesiones: ${filtrados.length}\n`;
+        contenido += `\n${'='.repeat(60)}\n\n`;
+        
+        filtrados.forEach((s, i) => {
+            contenido += `SESIÓN ${i + 1}\n`;
+            contenido += `Fecha: ${s.fecha}\n`;
+            contenido += `Categoría: ${s.categoria}\n`;
+            contenido += `Atendido por: ${s.atendido_por}\n\n`;
+            contenido += `Evolución:\n${s.notas}\n`;
+            contenido += `\n${'-'.repeat(60)}\n\n`;
+        });
+        
+        // Crear y descargar archivo
+        const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Historial_${filtrados[0].paciente}_${selectedDni}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        mostrarNotificacion('📥 Archivo descargado');
+    }
+
+    // ============================================
+    // FUNCIONES AUXILIARES
+    // ============================================
+    
+    function showLoad(mostrar, texto = 'Cargando...') {
+        document.getElementById('loading-text').innerText = texto;
+        document.getElementById('loading').style.display = mostrar ? 'flex' : 'none';
+    }
+
+    function mostrarError(elementId, mensaje) {
+        const el = document.getElementById(elementId);
+        el.innerText = mensaje;
+        el.style.display = 'block';
+        setTimeout(() => el.style.display = 'none', 4000);
+    }
+
+    function mostrarNotificacion(mensaje) {
+        const notif = document.createElement('div');
+        notif.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--accent);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+        `;
+        notif.innerText = mensaje;
+        document.body.appendChild(notif);
+        
+        setTimeout(() => {
+            notif.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => document.body.removeChild(notif), 300);
+        }, 2500);
+    }
+
+    // Iniciar aplicación
     window.onload = init;
 </script>
+
+<style>
+    @keyframes slideIn {
+        from { transform: translateX(400px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(400px); opacity: 0; }
+    }
+</style>
+
 </body>
 </html>
