@@ -16,7 +16,6 @@
         .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--blue); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        #config-screen { display: none; align-items: center; justify-content: center; min-height: 100vh; }
         #login-screen { display: none; align-items: center; justify-content: center; min-height: 100vh; }
         .login-card { background: white; padding: 40px; border-radius: 16px; box-shadow: var(--shadow); width: 380px; text-align: center; }
         
@@ -46,10 +45,6 @@
         .paciente-item:hover { background: #f8fbff; transform: translateX(5px); }
         .sesion-card { border: 1px solid #eef2f6; padding: 15px; border-radius: 10px; margin-bottom: 15px; transition: all 0.3s; }
         .sesion-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        
-        .help-text { font-size: 0.85rem; color: var(--gray); margin-top: 10px; line-height: 1.5; }
-        .config-input { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: 600; color: var(--primary); }
     </style>
 </head>
 <body>
@@ -135,8 +130,8 @@
     
     // 🔐 CONFIGURACIÓN - Coloca aquí tus credenciales
     const CONFIG = {
-        sheetId: '1PVhGBEELaeoDvNI_F2ULsHZIkeR2AoGSNNiEeSpNViw',  // Tu Sheet ID
-        apiKey: 'AIzaSyCEFnKpBMvyCQ00l9owN6pebDbvzy_Mso4'     // Tu API Key
+        sheetId: '1PVhGBEELaeoDvNI_F2ULsHZIkeR2AoGSNNiEeSpNViw',
+        apiKey: 'AIzaSyCEFnKpBMvyCQ00l9owN6pebDbvzy_Mso4'
     };
     
     let config = {
@@ -156,19 +151,8 @@
     // ============================================
     
     function init() {
-        // Validar que las credenciales estén configuradas
-        if (config.sheetId === '1PVhGBEELaeoDvNI_F2ULsHZIkeR2AoGSNNiEeSpNViw' || config.apiKey === 'AIzaSyBOh7wEtc5Q-KiOjdUJnkUVmOxJBkQqWvs) {
-            document.getElementById('loading').style.display = 'none';
-            alert('⚠️ ERROR DE CONFIGURACIÓN\n\nDebes editar el archivo HTML y reemplazar:\n- TU_SHEET_ID_AQUI\n- TU_API_KEY_AQUI\n\nCon tus credenciales reales.');
-            return;
-        }
-        
         cargarDatos();
     }
-
-    // ============================================
-    // CONFIGURACIÓN
-    // ============================================
 
     // ============================================
     // CARGA DE DATOS DESDE GOOGLE SHEETS API
@@ -183,7 +167,9 @@
             const resPacientes = await fetch(urlPacientes);
             
             if (!resPacientes.ok) {
-                throw new Error('Error al cargar datos. Verifica que:\n1. El Sheet ID sea correcto\n2. La API Key sea válida\n3. El Sheet esté compartido públicamente');
+                const errorData = await resPacientes.json();
+                console.error('Error completo:', errorData);
+                throw new Error('Error al cargar datos:\n' + (errorData.error?.message || 'Error desconocido'));
             }
             
             const dataPacientes = await resPacientes.json();
@@ -191,6 +177,12 @@
             // Cargar usuarios
             const urlUsuarios = `https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/${SHEET_USUARIOS}?key=${config.apiKey}`;
             const resUsuarios = await fetch(urlUsuarios);
+            
+            if (!resUsuarios.ok) {
+                const errorData = await resUsuarios.json();
+                throw new Error('Error al cargar usuarios:\n' + (errorData.error?.message || 'Error desconocido'));
+            }
+            
             const dataUsuarios = await resUsuarios.json();
             
             // Procesar pacientes
@@ -229,7 +221,8 @@
             
         } catch (error) {
             showLoad(false);
-            alert('❌ Error: ' + error.message);
+            console.error('Error completo:', error);
+            alert('❌ Error al cargar datos:\n\n' + error.message + '\n\nVerifica:\n1. API Key correcta\n2. Sheet ID correcto\n3. Sheet compartido públicamente como "Editor"\n4. Google Sheets API habilitada');
         }
     }
 
@@ -284,7 +277,6 @@
         };
         
         try {
-            // Agregar a la hoja usando batchUpdate
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/${SHEET_PACIENTES}:append?valueInputOption=RAW&key=${config.apiKey}`;
             
             const response = await fetch(url, {
@@ -305,39 +297,21 @@
                 })
             });
             
-            if (!response.ok) throw new Error('Error al guardar');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error?.message || 'Error al guardar');
+            }
             
             await cargarDatos();
             verHistorial(dni);
             document.getElementById('notas').value = "";
             showLoad(false);
             
-            // Mostrar notificación de éxito
             mostrarNotificacion('✅ Sesión guardada correctamente');
             
         } catch (error) {
             showLoad(false);
             alert('❌ Error al guardar: ' + error.message);
-        }
-    }
-
-    // ============================================
-    // ELIMINAR SESIÓN
-    // ============================================
-    
-    async function borrar(id, rowIndex) {
-        if(!confirm("¿Eliminar esta sesión?")) return;
-        
-        showLoad(true, "Eliminando...");
-        
-        try {
-            // Nota: La eliminación directa requiere OAuth2, por lo que mostraremos un método alternativo
-            alert('⚠️ Para eliminar sesiones, ve directamente a tu Google Sheet y borra la fila correspondiente.\n\nEsta función requiere permisos avanzados que deben configurarse en Google Cloud Console.');
-            showLoad(false);
-            
-        } catch (error) {
-            showLoad(false);
-            alert('❌ Error: ' + error.message);
         }
     }
 
@@ -356,7 +330,6 @@
             return;
         }
         
-        // Verificar si el usuario ya existe
         if (db.usuarios.find(u => u.usuario === usuario)) {
             alert("⚠️ El usuario ya existe");
             return;
@@ -377,7 +350,10 @@
                 })
             });
             
-            if (!response.ok) throw new Error('Error al crear usuario');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error?.message || 'Error al crear usuario');
+            }
             
             await cargarDatos();
             document.getElementById('adm-nombre').value = "";
@@ -534,7 +510,6 @@
             contenido += `\n${'-'.repeat(60)}\n\n`;
         });
         
-        // Crear y descargar archivo
         const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -555,13 +530,6 @@
     function showLoad(mostrar, texto = 'Cargando...') {
         document.getElementById('loading-text').innerText = texto;
         document.getElementById('loading').style.display = mostrar ? 'flex' : 'none';
-    }
-
-    function mostrarError(elementId, mensaje) {
-        const el = document.getElementById(elementId);
-        el.innerText = mensaje;
-        el.style.display = 'block';
-        setTimeout(() => el.style.display = 'none', 4000);
     }
 
     function mostrarNotificacion(mensaje) {
@@ -587,7 +555,6 @@
         }, 2500);
     }
 
-    // Iniciar aplicación
     window.onload = init;
 </script>
 
@@ -604,7 +571,3 @@
 
 </body>
 </html>
-
-
-
-
