@@ -128,71 +128,50 @@
     </div>
 
 <script>
-    // ============================================
-    // CONFIGURACIÓN Y VARIABLES GLOBALES
-    // ============================================
-    
-    // 🔐 CONFIGURACIÓN - URL de tu Google Apps Script desplegado como Web App
     const CONFIG = {
-        webAppUrl: 'https://script.google.com/macros/s/AKfycbzlhfUcpAxHXKcEIvg7jS4ZefBCdU2MVfaBUjpX6e1c9QRnuy9OB0xKjlpcHmKQ8Tom/exec'  // Ejemplo: https://script.google.com/macros/s/AKfyc.../exec
+        webAppUrl: 'https://script.google.com/macros/s/AKfycbxwPYy3eBqZVThenHKG34Dcnt0L4wngbbLNpZeu6bLRUkfo-VlHRV6IoBHvHJWBxyCH/exec'
     };
     
     let db = { pacientes: [], usuarios: [] };
     let currentUser = null;
     let selectedDni = "";
-    
-    const SHEET_PACIENTES = 'Pacientes';
-    const SHEET_USUARIOS = 'Usuarios';
 
-    // ============================================
-    // INICIALIZACIÓN
-    // ============================================
-    
     function init() {
         cargarDatos();
     }
 
-    // ============================================
-    // CARGA DE DATOS DESDE GOOGLE APPS SCRIPT
-    // ============================================
-    
     async function cargarDatos() {
         try {
             showLoad(true, 'Sincronizando con Google Sheets...');
-            
             const url = `${CONFIG.webAppUrl}?action=loadData`;
             const response = await fetch(url);
             
-            if (!response.ok) {
-                throw new Error('Error al conectar con el servidor');
-            }
+            if (!response.ok) throw new Error('Error al conectar');
             
             const data = await response.json();
-            
-            if (data.error) {
-                throw new Error(data.error);
-            }
+            if (data.error) throw new Error(data.error);
             
             db.pacientes = data.pacientes || [];
             db.usuarios = data.usuarios || [];
             
+            console.log('Usuarios cargados:', db.usuarios.length);
+            
             showLoad(false);
             document.getElementById('login-screen').style.display = 'flex';
-            
         } catch (error) {
             showLoad(false);
-            console.error('Error completo:', error);
-            alert('❌ Error al cargar datos:\n\n' + error.message + '\n\nVerifica que:\n1. Hayas configurado la URL de Web App\n2. El Web App esté implementado correctamente\n3. Los permisos estén autorizados');
+            console.error('Error:', error);
+            alert('❌ Error al cargar datos: ' + error.message);
         }
     }
 
-    // ============================================
-    // LOGIN
-    // ============================================
-    
     function login() {
         const u = document.getElementById('userInput').value.trim();
         const p = document.getElementById('passInput').value.trim();
+        
+        console.log('Intentando login:', u);
+        console.log('Usuarios disponibles:', db.usuarios.map(user => user.usuario));
+        
         const user = db.usuarios.find(x => x.usuario === u && x.password === p);
 
         if(user || (u === "admin" && p === "1234")) {
@@ -204,16 +183,13 @@
             renderLista();
         } else {
             document.getElementById('error-msg').style.display = 'block';
+            console.log('Login fallido para:', u);
             setTimeout(() => {
                 document.getElementById('error-msg').style.display = 'none';
             }, 3000);
         }
     }
 
-    // ============================================
-    // GUARDAR SESIÓN
-    // ============================================
-    
     async function guardar() {
         const dni = String(document.getElementById('dni').value).trim();
         const paciente = document.getElementById('paciente').value.trim();
@@ -224,7 +200,7 @@
             return;
         }
 
-        showLoad(true, "Guardando en Google Sheets...");
+        showLoad(true, "Guardando...");
         
         const payload = {
             action: 'save',
@@ -240,39 +216,28 @@
         try {
             const response = await fetch(CONFIG.webAppUrl, {
                 method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify(payload)
             });
             
-            // Esperar 1.5 segundos para que se guarde
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            const result = await response.json();
             
-            // Recargar datos
-            await cargarDatos();
-            
-            // Mostrar historial actualizado
-            verHistorial(dni);
-            
-            // Limpiar solo las notas
-            document.getElementById('notas').value = "";
+            if (result.status === 'success') {
+                await cargarDatos();
+                verHistorial(dni);
+                document.getElementById('notas').value = "";
+                mostrarNotificacion('✅ Sesión guardada');
+            } else {
+                throw new Error(result.message || 'Error al guardar');
+            }
             
             showLoad(false);
-            
-            mostrarNotificacion('✅ Sesión guardada correctamente');
-            
         } catch (error) {
             showLoad(false);
-            alert('❌ Error al guardar: ' + error.message);
+            alert('❌ Error: ' + error.message);
         }
     }
 
-    // ============================================
-    // CREAR USUARIO
-    // ============================================
-    
     async function crearUsuario() {
         const nombre = document.getElementById('adm-nombre').value.trim();
         const usuario = document.getElementById('adm-user').value.trim();
@@ -285,7 +250,7 @@
         }
         
         if (db.usuarios.find(u => u.usuario === usuario)) {
-            alert("⚠️ El usuario ya existe");
+            alert("⚠️ El usuario ya existe localmente");
             return;
         }
 
@@ -302,41 +267,35 @@
         try {
             const response = await fetch(CONFIG.webAppUrl, {
                 method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'text/plain' },
                 body: JSON.stringify(payload)
             });
             
-            // Esperar 2 segundos para que se guarde
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            const result = await response.json();
+            console.log('Resultado crear usuario:', result);
             
-            // Recargar datos desde el servidor
-            await cargarDatos();
-            
-            // Limpiar formulario
-            document.getElementById('adm-nombre').value = "";
-            document.getElementById('adm-user').value = "";
-            document.getElementById('adm-pass').value = "";
+            if (result.status === 'success') {
+                // Limpiar formulario
+                document.getElementById('adm-nombre').value = "";
+                document.getElementById('adm-user').value = "";
+                document.getElementById('adm-pass').value = "";
+                
+                // Recargar datos
+                await cargarDatos();
+                
+                mostrarNotificacion('✅ Usuario creado');
+                alert(`✅ Usuario creado\n\nUsuario: ${usuario}\nContraseña: ${password}\n\n¡Ya puede iniciar sesión!`);
+            } else {
+                throw new Error(result.message || 'Error al crear usuario');
+            }
             
             showLoad(false);
-            
-            mostrarNotificacion('✅ Usuario creado exitosamente');
-            
-            // Mostrar mensaje informativo
-            alert(`✅ Usuario creado correctamente\n\nUsuario: ${usuario}\nContraseña: ${password}\n\nYa puede iniciar sesión con estas credenciales.`);
-            
         } catch (error) {
             showLoad(false);
-            alert('❌ Error al crear usuario: ' + error.message);
+            alert('❌ Error: ' + error.message);
         }
     }
 
-    // ============================================
-    // FUNCIONES DE INTERFAZ
-    // ============================================
-    
     function renderLista(filtro = "") {
         const div = document.getElementById('listaPacientes');
         const unicos = {};
@@ -441,10 +400,6 @@
         mostrarNotificacion('🔄 Sincronizando...');
     }
 
-    // ============================================
-    // EXPORTAR PDF
-    // ============================================
-    
     function exportarPDF() {
         if(!selectedDni) {
             alert("⚠️ Selecciona un paciente primero");
@@ -452,146 +407,23 @@
         }
         
         const filtrados = db.pacientes.filter(x => String(x.dni) === selectedDni);
-        
         if(filtrados.length === 0) {
             alert("⚠️ No hay sesiones para exportar");
             return;
         }
         
-        // Obtener la URL base de la aplicación para el logo
         const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
         const logoUrl = baseUrl + 'logo.png';
         
-        // Crear contenido HTML con logo
-        let contenidoHTML = `
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Historial Clínico - ${filtrados[0].paciente}</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 20px;
-            line-height: 1.6;
-            color: #333;
-        }
-        .header {
-            text-align: center;
-            border-bottom: 3px solid #3498db;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-        }
-        .logo {
-            width: 150px;
-            height: auto;
-            margin-bottom: 15px;
-        }
-        .header h1 {
-            color: #3498db;
-            margin: 10px 0;
-        }
-        .info-paciente {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-        }
-        .info-paciente p {
-            margin: 8px 0;
-            font-size: 16px;
-        }
-        .sesion {
-            border: 1px solid #e0e6ed;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 25px;
-            page-break-inside: avoid;
-        }
-        .sesion-header {
-            background: #3498db;
-            color: white;
-            padding: 10px 15px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-        }
-        .sesion-fecha {
-            font-weight: bold;
-            font-size: 18px;
-        }
-        .sesion-categoria {
-            color: #3498db;
-            font-weight: 600;
-            margin: 10px 0;
-        }
-        .sesion-atendio {
-            color: #7f8c8d;
-            font-size: 14px;
-            margin-bottom: 15px;
-        }
-        .sesion-notas {
-            background: #f8f9fa;
-            padding: 15px;
-            border-left: 4px solid #3498db;
-            border-radius: 4px;
-            white-space: pre-wrap;
-        }
-        .footer {
-            margin-top: 40px;
-            text-align: center;
-            color: #7f8c8d;
-            font-size: 12px;
-            border-top: 1px solid #e0e6ed;
-            padding-top: 20px;
-        }
-        @media print {
-            body { margin: 0; padding: 15px; }
-            .sesion { page-break-inside: avoid; }
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <img src="${logoUrl}" alt="+FISIO Logo" class="logo" onerror="this.style.display='none'">
-        <h1>+FISIO Pro</h1>
-        <h2>HISTORIA CLÍNICA</h2>
-    </div>
-    
-    <div class="info-paciente">
-        <p><strong>Paciente:</strong> ${filtrados[0].paciente}</p>
-        <p><strong>DNI:</strong> ${selectedDni}</p>
-        <p><strong>Fecha de generación:</strong> ${new Date().toLocaleString('es-ES')}</p>
-        <p><strong>Total de sesiones:</strong> ${filtrados.length}</p>
-    </div>
-`;
+        let html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Historial - ${filtrados[0].paciente}</title><style>body{font-family:'Segoe UI',sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.6;color:#333}.header{text-align:center;border-bottom:3px solid #3498db;padding-bottom:20px;margin-bottom:30px}.logo{width:150px;height:auto;margin-bottom:15px}.header h1{color:#3498db;margin:10px 0}.info-paciente{background:#f8f9fa;padding:20px;border-radius:8px;margin-bottom:30px}.sesion{border:1px solid #e0e6ed;border-radius:10px;padding:20px;margin-bottom:25px;page-break-inside:avoid}.sesion-header{background:#3498db;color:white;padding:10px 15px;border-radius:6px;margin-bottom:15px;font-weight:bold}.sesion-categoria{color:#3498db;font-weight:600;margin:10px 0}.sesion-notas{background:#f8f9fa;padding:15px;border-left:4px solid #3498db;border-radius:4px;white-space:pre-wrap}@media print{body{margin:0;padding:15px}.sesion{page-break-inside:avoid}}</style></head><body><div class="header"><img src="${logoUrl}" alt="Logo" class="logo" onerror="this.style.display='none'"><h1>+FISIO Pro</h1><h2>HISTORIA CLÍNICA</h2></div><div class="info-paciente"><p><strong>Paciente:</strong> ${filtrados[0].paciente}</p><p><strong>DNI:</strong> ${selectedDni}</p><p><strong>Fecha:</strong> ${new Date().toLocaleString('es-ES')}</p><p><strong>Total sesiones:</strong> ${filtrados.length}</p></div>`;
         
         filtrados.forEach((s, i) => {
-            contenidoHTML += `
-    <div class="sesion">
-        <div class="sesion-header">
-            <div class="sesion-fecha">📅 SESIÓN ${i + 1} - ${s.fecha}</div>
-        </div>
-        <div class="sesion-categoria">${s.categoria}</div>
-        <div class="sesion-atendio">👨‍⚕️ Atendido por: ${s.atendido_por}</div>
-        <div class="sesion-notas">${s.notas}</div>
-    </div>
-`;
+            html += `<div class="sesion"><div class="sesion-header">📅 SESIÓN ${i+1} - ${s.fecha}</div><div class="sesion-categoria">${s.categoria}</div><p style="color:#7f8c8d;font-size:14px">👨‍⚕️ ${s.atendido_por}</p><div class="sesion-notas">${s.notas}</div></div>`;
         });
         
-        contenidoHTML += `
-    <div class="footer">
-        <p>Documento generado por +FISIO Pro - Sistema de Gestión de Fisioterapia</p>
-        <p>© ${new Date().getFullYear()} - Todos los derechos reservados</p>
-    </div>
-</body>
-</html>
-`;
+        html += `<div style="margin-top:40px;text-align:center;color:#7f8c8d;font-size:12px;border-top:1px solid #e0e6ed;padding-top:20px"><p>+FISIO Pro © ${new Date().getFullYear()}</p></div></body></html>`;
         
-        // Crear y descargar archivo HTML
-        const blob = new Blob([contenidoHTML], { type: 'text/html;charset=utf-8' });
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -601,13 +433,9 @@
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
         
-        mostrarNotificacion('📥 Archivo descargado - Abre el HTML y usa "Imprimir a PDF" en tu navegador');
+        mostrarNotificacion('📥 Descargado - Abre el HTML y presiona Ctrl+P');
     }
 
-    // ============================================
-    // FUNCIONES AUXILIARES
-    // ============================================
-    
     function showLoad(mostrar, texto = 'Cargando...') {
         document.getElementById('loading-text').innerText = texto;
         document.getElementById('loading').style.display = mostrar ? 'flex' : 'none';
@@ -615,21 +443,9 @@
 
     function mostrarNotificacion(mensaje) {
         const notif = document.createElement('div');
-        notif.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: var(--accent);
-            color: white;
-            padding: 15px 25px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 10000;
-            animation: slideIn 0.3s ease;
-        `;
+        notif.style.cssText = 'position:fixed;top:20px;right:20px;background:var(--accent);color:white;padding:15px 25px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:10000;animation:slideIn 0.3s ease';
         notif.innerText = mensaje;
         document.body.appendChild(notif);
-        
         setTimeout(() => {
             notif.style.animation = 'slideOut 0.3s ease';
             setTimeout(() => document.body.removeChild(notif), 300);
@@ -638,17 +454,9 @@
 
     window.onload = init;
 </script>
-
 <style>
-    @keyframes slideIn {
-        from { transform: translateX(400px); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-    @keyframes slideOut {
-        from { transform: translateX(0); opacity: 1; }
-        to { transform: translateX(400px); opacity: 0; }
-    }
+    @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(400px); opacity: 0; } }
 </style>
-
 </body>
 </html>
