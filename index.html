@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>+FISIO Pro | Gestión Especializada</title>
+    <title>+FISIO | Gestión</title>
     <style>
         :root { 
             --primary: #2c3e50; --accent: #27ae60; --bg: #f0f2f5; 
@@ -57,7 +57,7 @@
     <div id="login-screen">
         <div class="login-card">
             <img src="logo.png" alt="+FISIO Logo" style="width: 120px; height: auto; margin-bottom: 20px; display: block; margin-left: auto; margin-right: auto;">
-            <h1 style="color:var(--blue); margin:0 0 10px 0;">+FISIO</h1>
+            <h1 style="color:var(--blue); margin:0 0 10px 0;"> </h1>
             <p style="color:var(--gray); margin-bottom: 20px;">Sistema de Gestión de Pacientes</p>
             <input type="text" id="userInput" placeholder="Usuario" style="margin-bottom:10px;">
             <input type="password" id="passInput" placeholder="Contraseña" style="margin-bottom:10px;">
@@ -247,11 +247,18 @@
                 body: JSON.stringify(payload)
             });
             
-            // Con no-cors no podemos leer la respuesta, pero si llegó aquí, probablemente funcionó
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar 1 segundo
+            // Esperar 1.5 segundos para que se guarde
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // Recargar datos
             await cargarDatos();
+            
+            // Mostrar historial actualizado
             verHistorial(dni);
+            
+            // Limpiar solo las notas
             document.getElementById('notas').value = "";
+            
             showLoad(false);
             
             mostrarNotificacion('✅ Sesión guardada correctamente');
@@ -302,14 +309,23 @@
                 body: JSON.stringify(payload)
             });
             
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Esperar 2 segundos para que se guarde
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Recargar datos desde el servidor
             await cargarDatos();
+            
+            // Limpiar formulario
             document.getElementById('adm-nombre').value = "";
             document.getElementById('adm-user').value = "";
             document.getElementById('adm-pass').value = "";
+            
             showLoad(false);
             
             mostrarNotificacion('✅ Usuario creado exitosamente');
+            
+            // Mostrar mensaje informativo
+            alert(`✅ Usuario creado correctamente\n\nUsuario: ${usuario}\nContraseña: ${password}\n\nYa puede iniciar sesión con estas credenciales.`);
             
         } catch (error) {
             showLoad(false);
@@ -442,6 +458,10 @@
             return;
         }
         
+        // Obtener la URL base de la aplicación para el logo
+        const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+        const logoUrl = baseUrl + 'logo.png';
+        
         // Crear contenido HTML con logo
         let contenidoHTML = `
 <!DOCTYPE html>
@@ -535,7 +555,7 @@
 </head>
 <body>
     <div class="header">
-        <img src="logo.png" alt="+FISIO Logo" class="logo">
+        <img src="${logoUrl}" alt="+FISIO Logo" class="logo" onerror="this.style.display='none'">
         <h1>+FISIO Pro</h1>
         <h2>HISTORIA CLÍNICA</h2>
     </div>
