@@ -43,8 +43,19 @@
         
         .paciente-item { padding: 12px; border-bottom: 1px solid #f0f2f5; cursor: pointer; transition: all 0.2s; }
         .paciente-item:hover { background: #f8fbff; transform: translateX(5px); }
-        .sesion-card { border: 1px solid #eef2f6; padding: 15px; border-radius: 10px; margin-bottom: 15px; transition: all 0.3s; }
+        .sesion-card { border: 1px solid #eef2f6; padding: 15px; border-radius: 10px; margin-bottom: 15px; transition: all 0.3s; position: relative; }
         .sesion-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        
+        .btn-delete { position: absolute; top: 10px; right: 10px; background: none; border: none; color: var(--danger); cursor: pointer; font-size: 20px; font-weight: bold; padding: 5px 10px; border-radius: 4px; transition: all 0.2s; }
+        .btn-delete:hover { background: var(--danger); color: white; }
+        
+        /* Modal */
+        .modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: white; margin: 10% auto; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .modal-header { margin-bottom: 20px; }
+        .modal-header h2 { margin: 0; color: var(--primary); }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close:hover { color: #000; }
     </style>
 </head>
 <body>
@@ -66,6 +77,20 @@
         </div>
     </div>
 
+    <!-- Modal Cambiar Contraseña -->
+    <div id="modalPassword" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close" onclick="cerrarModalPassword()">&times;</span>
+                <h2>🔐 Cambiar Contraseña</h2>
+            </div>
+            <input type="password" id="pass-actual" placeholder="Contraseña actual" style="margin-bottom:10px;">
+            <input type="password" id="pass-nueva" placeholder="Nueva contraseña" style="margin-bottom:10px;">
+            <input type="password" id="pass-confirmar" placeholder="Confirmar nueva contraseña" style="margin-bottom:20px;">
+            <button class="btn-save" onclick="cambiarPassword()" style="width:100%;">CAMBIAR CONTRASEÑA</button>
+        </div>
+    </div>
+
     <div id="main-app">
         <aside>
             <div class="panel">
@@ -74,7 +99,10 @@
                         <img src="logo.png" alt="+FISIO Logo" style="width: 35px; height: auto;">
                         <span id="user-tag" style="font-weight:bold; color:var(--admin);"></span>
                     </div>
-                    <button onclick="cerrarSesion()" style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold;">SALIR</button>
+                    <div style="display:flex; gap:10px;">
+                        <button onclick="abrirModalPassword()" style="background:none; border:none; color:var(--blue); cursor:pointer; font-weight:bold;" title="Cambiar contraseña">🔐</button>
+                        <button onclick="cerrarSesion()" style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold;">SALIR</button>
+                    </div>
                 </div>
                 <h3>📝 Registro de Sesión</h3>
                 <div class="form-row">
@@ -129,7 +157,7 @@
 
 <script>
     const CONFIG = {
-        webAppUrl: 'https://script.google.com/macros/s/AKfycbxCiP5tHYxH708HcIia90QLtV-mNxHT3QVBnYMVgl_sxMjvUAN1Pd6MVJyRvkjxEqoM/exec'
+        webAppUrl: 'https://script.google.com/macros/s/AKfycbw6N6EBJf72lwVAbY_exy8qjMh_pwMYv_t3A8GZ_wNYL4pN62_Wd937lrEdMK5ALPVy/exec'
     };
     
     let db = { pacientes: [], usuarios: [] };
@@ -154,13 +182,10 @@
             db.pacientes = data.pacientes || [];
             db.usuarios = data.usuarios || [];
             
-            console.log('Usuarios cargados:', db.usuarios.length);
-            
             showLoad(false);
             document.getElementById('login-screen').style.display = 'flex';
         } catch (error) {
             showLoad(false);
-            console.error('Error:', error);
             alert('❌ Error al cargar datos: ' + error.message);
         }
     }
@@ -169,24 +194,94 @@
         const u = document.getElementById('userInput').value.trim();
         const p = document.getElementById('passInput').value.trim();
         
-        console.log('Intentando login:', u);
-        console.log('Usuarios disponibles:', db.usuarios.map(user => user.usuario));
-        
         const user = db.usuarios.find(x => x.usuario === u && x.password === p);
 
         if(user || (u === "admin" && p === "1234")) {
-            currentUser = user || { nombre_completo: "Admin Maestro", rol: "admin" };
+            currentUser = user || { nombre_completo: "Admin Maestro", rol: "admin", usuario: "admin" };
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'grid';
             document.getElementById('user-tag').innerText = "👤 " + currentUser.nombre_completo;
-            if(currentUser.rol === "admin") document.getElementById('btnAdmin').style.display = 'block';
+            
+            // Solo mostrar panel admin si es admin
+            if(currentUser.rol === "admin") {
+                document.getElementById('btnAdmin').style.display = 'block';
+            }
+            
             renderLista();
         } else {
             document.getElementById('error-msg').style.display = 'block';
-            console.log('Login fallido para:', u);
             setTimeout(() => {
                 document.getElementById('error-msg').style.display = 'none';
             }, 3000);
+        }
+    }
+
+    // ============================================
+    // CAMBIAR CONTRASEÑA
+    // ============================================
+    
+    function abrirModalPassword() {
+        document.getElementById('modalPassword').style.display = 'block';
+        document.getElementById('pass-actual').value = '';
+        document.getElementById('pass-nueva').value = '';
+        document.getElementById('pass-confirmar').value = '';
+    }
+    
+    function cerrarModalPassword() {
+        document.getElementById('modalPassword').style.display = 'none';
+    }
+    
+    async function cambiarPassword() {
+        const passActual = document.getElementById('pass-actual').value.trim();
+        const passNueva = document.getElementById('pass-nueva').value.trim();
+        const passConfirmar = document.getElementById('pass-confirmar').value.trim();
+        
+        if (!passActual || !passNueva || !passConfirmar) {
+            alert('⚠️ Completa todos los campos');
+            return;
+        }
+        
+        if (passNueva !== passConfirmar) {
+            alert('⚠️ Las contraseñas no coinciden');
+            return;
+        }
+        
+        if (passNueva.length < 4) {
+            alert('⚠️ La contraseña debe tener al menos 4 caracteres');
+            return;
+        }
+        
+        showLoad(true, 'Cambiando contraseña...');
+        
+        const payload = {
+            action: 'change_password',
+            usuario: currentUser.usuario,
+            password_actual: passActual,
+            password_nueva: passNueva
+        };
+        
+        try {
+            const response = await fetch(CONFIG.webAppUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify(payload)
+            });
+            
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+                cerrarModalPassword();
+                await cargarDatos();
+                mostrarNotificacion('✅ Contraseña cambiada');
+                alert('✅ Contraseña actualizada correctamente');
+            } else {
+                throw new Error(result.message || 'Error al cambiar contraseña');
+            }
+            
+            showLoad(false);
+        } catch (error) {
+            showLoad(false);
+            alert('❌ Error: ' + error.message);
         }
     }
 
@@ -238,6 +333,46 @@
         }
     }
 
+    // ============================================
+    // ELIMINAR SESIÓN
+    // ============================================
+    
+    async function eliminarSesion(id) {
+        if (!confirm('¿Está seguro de eliminar esta sesión?\n\nEsta acción no se puede deshacer.')) {
+            return;
+        }
+        
+        showLoad(true, 'Eliminando...');
+        
+        const payload = {
+            action: 'delete_session',
+            id: id
+        };
+        
+        try {
+            const response = await fetch(CONFIG.webAppUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify(payload)
+            });
+            
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+                await cargarDatos();
+                verHistorial(selectedDni);
+                mostrarNotificacion('✅ Sesión eliminada');
+            } else {
+                throw new Error(result.message || 'Error al eliminar');
+            }
+            
+            showLoad(false);
+        } catch (error) {
+            showLoad(false);
+            alert('❌ Error: ' + error.message);
+        }
+    }
+
     async function crearUsuario() {
         const nombre = document.getElementById('adm-nombre').value.trim();
         const usuario = document.getElementById('adm-user').value.trim();
@@ -250,7 +385,7 @@
         }
         
         if (db.usuarios.find(u => u.usuario === usuario)) {
-            alert("⚠️ El usuario ya existe localmente");
+            alert("⚠️ El usuario ya existe");
             return;
         }
 
@@ -272,15 +407,12 @@
             });
             
             const result = await response.json();
-            console.log('Resultado crear usuario:', result);
             
             if (result.status === 'success') {
-                // Limpiar formulario
                 document.getElementById('adm-nombre').value = "";
                 document.getElementById('adm-user').value = "";
                 document.getElementById('adm-pass').value = "";
                 
-                // Recargar datos
                 await cargarDatos();
                 
                 mostrarNotificacion('✅ Usuario creado');
@@ -337,7 +469,8 @@
 
         document.getElementById('historial-body').innerHTML = filtrados.map((s, idx) => `
             <div class="sesion-card">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
+                <button class="btn-delete" onclick="eliminarSesion('${s.id}')" title="Eliminar sesión">✕</button>
+                <div style="display:flex; justify-content:space-between; align-items:center; padding-right:30px;">
                     <small style="color: var(--primary);"><b>📅 ${s.fecha}</b></small>
                     <span style="background: var(--blue); color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem;">#${filtrados.length - idx}</span>
                 </div>
@@ -415,13 +548,13 @@
         const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
         const logoUrl = baseUrl + 'logo.png';
         
-        let html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Historial - ${filtrados[0].paciente}</title><style>body{font-family:'Segoe UI',sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.6;color:#333}.header{text-align:center;border-bottom:3px solid #3498db;padding-bottom:20px;margin-bottom:30px}.logo{width:150px;height:auto;margin-bottom:15px}.header h1{color:#3498db;margin:10px 0}.info-paciente{background:#f8f9fa;padding:20px;border-radius:8px;margin-bottom:30px}.sesion{border:1px solid #e0e6ed;border-radius:10px;padding:20px;margin-bottom:25px;page-break-inside:avoid}.sesion-header{background:#3498db;color:white;padding:10px 15px;border-radius:6px;margin-bottom:15px;font-weight:bold}.sesion-categoria{color:#3498db;font-weight:600;margin:10px 0}.sesion-notas{background:#f8f9fa;padding:15px;border-left:4px solid #3498db;border-radius:4px;white-space:pre-wrap}@media print{body{margin:0;padding:15px}.sesion{page-break-inside:avoid}}</style></head><body><div class="header"><img src="${logoUrl}" alt="Logo" class="logo" onerror="this.style.display='none'"><h1>+FISIO Pro</h1><h2>HISTORIA CLÍNICA</h2></div><div class="info-paciente"><p><strong>Paciente:</strong> ${filtrados[0].paciente}</p><p><strong>DNI:</strong> ${selectedDni}</p><p><strong>Fecha:</strong> ${new Date().toLocaleString('es-ES')}</p><p><strong>Total sesiones:</strong> ${filtrados.length}</p></div>`;
+        let html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Historial - ${filtrados[0].paciente}</title><style>body{font-family:'Segoe UI',sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.6;color:#333}.header{text-align:center;border-bottom:3px solid #3498db;padding-bottom:20px;margin-bottom:30px}.logo{width:150px;height:auto;margin-bottom:15px}.info-paciente{background:#f8f9fa;padding:20px;border-radius:8px;margin-bottom:30px}.sesion{border:1px solid #e0e6ed;border-radius:10px;padding:20px;margin-bottom:25px;page-break-inside:avoid}.sesion-header{background:#3498db;color:white;padding:10px 15px;border-radius:6px;margin-bottom:15px;font-weight:bold}.sesion-categoria{color:#3498db;font-weight:600;margin:10px 0}.sesion-notas{background:#f8f9fa;padding:15px;border-left:4px solid #3498db;border-radius:4px;white-space:pre-wrap}@media print{body{margin:0;padding:15px}.sesion{page-break-inside:avoid}}</style></head><body><div class="header"><img src="${logoUrl}" alt="Logo" class="logo" onerror="this.style.display='none'"><h2>HISTORIA CLÍNICA</h2></div><div class="info-paciente"><p><strong>Paciente:</strong> ${filtrados[0].paciente}</p><p><strong>DNI:</strong> ${selectedDni}</p><p><strong>Fecha:</strong> ${new Date().toLocaleString('es-ES')}</p><p><strong>Total sesiones:</strong> ${filtrados.length}</p></div>`;
         
         filtrados.forEach((s, i) => {
             html += `<div class="sesion"><div class="sesion-header">📅 SESIÓN ${i+1} - ${s.fecha}</div><div class="sesion-categoria">${s.categoria}</div><p style="color:#7f8c8d;font-size:14px">👨‍⚕️ ${s.atendido_por}</p><div class="sesion-notas">${s.notas}</div></div>`;
         });
         
-        html += `<div style="margin-top:40px;text-align:center;color:#7f8c8d;font-size:12px;border-top:1px solid #e0e6ed;padding-top:20px"><p>+FISIO Pro © ${new Date().getFullYear()}</p></div></body></html>`;
+        html += `<div style="margin-top:40px;text-align:center;color:#7f8c8d;font-size:12px;border-top:1px solid #e0e6ed;padding-top:20px"><p>© ${new Date().getFullYear()}</p></div></body></html>`;
         
         const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
         const url = window.URL.createObjectURL(blob);
@@ -452,6 +585,14 @@
         }, 2500);
     }
 
+    // Cerrar modal al hacer clic fuera
+    window.onclick = function(event) {
+        const modal = document.getElementById('modalPassword');
+        if (event.target == modal) {
+            cerrarModalPassword();
+        }
+    }
+
     window.onload = init;
 </script>
 <style>
@@ -460,4 +601,3 @@
 </style>
 </body>
 </html>
-
