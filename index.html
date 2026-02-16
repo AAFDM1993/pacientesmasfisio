@@ -59,28 +59,6 @@
         <p id="loading-text" style="margin-top:15px; font-weight:bold;">Cargando sistema...</p>
     </div>
 
-    <div id="config-screen">
-        <div class="login-card">
-            <h1 style="color:var(--blue); margin:0 0 10px 0;">⚙️ Configuración</h1>
-            <p style="color:var(--gray); margin-bottom: 20px;">Configura la conexión con Google Sheets</p>
-            
-            <div class="config-input">
-                <label>ID de Google Sheet:</label>
-                <input type="text" id="sheetId" placeholder="Ej: 1ABC...xyz">
-                <p class="help-text">📌 Copia el ID desde la URL de tu Google Sheet</p>
-            </div>
-            
-            <div class="config-input">
-                <label>API Key de Google:</label>
-                <input type="password" id="apiKey" placeholder="Tu API Key">
-                <p class="help-text">🔑 <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Obtener API Key</a></p>
-            </div>
-            
-            <button class="btn-save" onclick="guardarConfig()" style="width:100%; margin-top:10px;">GUARDAR Y CONTINUAR</button>
-            <p id="config-error" style="color:var(--danger); display:none; margin-top:15px;"></p>
-        </div>
-    </div>
-
     <div id="login-screen">
         <div class="login-card">
             <h1 style="color:var(--blue); margin:0 0 10px 0;">+FISIO</h1>
@@ -88,7 +66,6 @@
             <input type="text" id="userInput" placeholder="Usuario" style="margin-bottom:10px;">
             <input type="password" id="passInput" placeholder="Contraseña" style="margin-bottom:10px;">
             <button class="btn-save" onclick="login()" style="width:100%; margin-top:10px;">INGRESAR</button>
-            <button onclick="mostrarConfig()" style="background:none; border:none; color:var(--blue); cursor:pointer; margin-top:15px; text-decoration:underline;">⚙️ Configuración</button>
             <p id="error-msg" style="color:var(--danger); display:none; margin-top:15px;">⚠️ Credenciales incorrectas</p>
         </div>
     </div>
@@ -156,9 +133,15 @@
     // CONFIGURACIÓN Y VARIABLES GLOBALES
     // ============================================
     
+    // 🔐 CONFIGURACIÓN - Coloca aquí tus credenciales
+    const CONFIG = {
+        sheetId: '1k7mN9pQ2rS4tU6vW8xY0zA1bC2dE3fG4hI5jK6lM',  // Tu Sheet ID
+        apiKey: 'AIzaSyCxDwEvFuGvHwIxJyKzLxMyNyOzPyQzRySzT'     // Tu API Key
+    };
+    
     let config = {
-        sheetId: localStorage.getItem('fisio_sheetId') || '',
-        apiKey: localStorage.getItem('fisio_apiKey') || ''
+        sheetId: CONFIG.sheetId,
+        apiKey: CONFIG.apiKey
     };
     
     let db = { pacientes: [], usuarios: [] };
@@ -173,45 +156,19 @@
     // ============================================
     
     function init() {
-        if (!config.sheetId || !config.apiKey) {
+        // Validar que las credenciales estén configuradas
+        if (config.sheetId === 'TU_SHEET_ID_AQUI' || config.apiKey === 'TU_API_KEY_AQUI') {
             document.getElementById('loading').style.display = 'none';
-            document.getElementById('config-screen').style.display = 'flex';
-        } else {
-            cargarDatos();
+            alert('⚠️ ERROR DE CONFIGURACIÓN\n\nDebes editar el archivo HTML y reemplazar:\n- TU_SHEET_ID_AQUI\n- TU_API_KEY_AQUI\n\nCon tus credenciales reales.');
+            return;
         }
+        
+        cargarDatos();
     }
 
     // ============================================
     // CONFIGURACIÓN
     // ============================================
-    
-    function guardarConfig() {
-        const sheetId = document.getElementById('sheetId').value.trim();
-        const apiKey = document.getElementById('apiKey').value.trim();
-        
-        if (!sheetId || !apiKey) {
-            mostrarError('config-error', '⚠️ Completa todos los campos');
-            return;
-        }
-        
-        config.sheetId = sheetId;
-        config.apiKey = apiKey;
-        
-        localStorage.setItem('fisio_sheetId', sheetId);
-        localStorage.setItem('fisio_apiKey', apiKey);
-        
-        document.getElementById('config-screen').style.display = 'none';
-        document.getElementById('loading').style.display = 'flex';
-        
-        cargarDatos();
-    }
-    
-    function mostrarConfig() {
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('config-screen').style.display = 'flex';
-        document.getElementById('sheetId').value = config.sheetId;
-        document.getElementById('apiKey').value = config.apiKey;
-    }
 
     // ============================================
     // CARGA DE DATOS DESDE GOOGLE SHEETS API
@@ -226,7 +183,7 @@
             const resPacientes = await fetch(urlPacientes);
             
             if (!resPacientes.ok) {
-                throw new Error('Error al cargar datos. Verifica tu configuración.');
+                throw new Error('Error al cargar datos. Verifica que:\n1. El Sheet ID sea correcto\n2. La API Key sea válida\n3. El Sheet esté compartido públicamente');
             }
             
             const dataPacientes = await resPacientes.json();
@@ -272,8 +229,7 @@
             
         } catch (error) {
             showLoad(false);
-            alert('❌ Error: ' + error.message + '\n\nVerifica tu configuración en la pantalla de ajustes.');
-            mostrarConfig();
+            alert('❌ Error: ' + error.message);
         }
     }
 
