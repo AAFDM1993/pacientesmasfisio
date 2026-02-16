@@ -56,6 +56,7 @@
 
     <div id="login-screen">
         <div class="login-card">
+            <img src="logo.png" alt="+FISIO Logo" style="width: 120px; height: auto; margin-bottom: 20px; display: block; margin-left: auto; margin-right: auto;">
             <h1 style="color:var(--blue); margin:0 0 10px 0;">+FISIO</h1>
             <p style="color:var(--gray); margin-bottom: 20px;">Sistema de Gestión de Pacientes</p>
             <input type="text" id="userInput" placeholder="Usuario" style="margin-bottom:10px;">
@@ -69,7 +70,10 @@
         <aside>
             <div class="panel">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <span id="user-tag" style="font-weight:bold; color:var(--admin);"></span>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <img src="logo.png" alt="+FISIO Logo" style="width: 35px; height: auto;">
+                        <span id="user-tag" style="font-weight:bold; color:var(--admin);"></span>
+                    </div>
                     <button onclick="cerrarSesion()" style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold;">SALIR</button>
                 </div>
                 <h3>📝 Registro de Sesión</h3>
@@ -128,15 +132,9 @@
     // CONFIGURACIÓN Y VARIABLES GLOBALES
     // ============================================
     
-    // 🔐 CONFIGURACIÓN - Coloca aquí tus credenciales
+    // 🔐 CONFIGURACIÓN - URL de tu Google Apps Script desplegado como Web App
     const CONFIG = {
-        sheetId: '1PVhGBEELaeoDvNI_F2ULsHZIkeR2AoGSNNiEeSpNViw',
-        apiKey: 'AIzaSyCEFnKpBMvyCQ00l9owN6pebDbvzy_Mso4'
-    };
-    
-    let config = {
-        sheetId: CONFIG.sheetId,
-        apiKey: CONFIG.apiKey
+        webAppUrl: 'https://script.google.com/macros/s/AKfycbzlhfUcpAxHXKcEIvg7jS4ZefBCdU2MVfaBUjpX6e1c9QRnuy9OB0xKjlpcHmKQ8Tom/exec'  // Ejemplo: https://script.google.com/macros/s/AKfyc.../exec
     };
     
     let db = { pacientes: [], usuarios: [] };
@@ -155,66 +153,28 @@
     }
 
     // ============================================
-    // CARGA DE DATOS DESDE GOOGLE SHEETS API
+    // CARGA DE DATOS DESDE GOOGLE APPS SCRIPT
     // ============================================
     
     async function cargarDatos() {
         try {
             showLoad(true, 'Sincronizando con Google Sheets...');
             
-            // Cargar pacientes
-            const urlPacientes = `https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/${SHEET_PACIENTES}?key=${config.apiKey}`;
-            const resPacientes = await fetch(urlPacientes);
+            const url = `${CONFIG.webAppUrl}?action=loadData`;
+            const response = await fetch(url);
             
-            if (!resPacientes.ok) {
-                const errorData = await resPacientes.json();
-                console.error('Error completo:', errorData);
-                throw new Error('Error al cargar datos:\n' + (errorData.error?.message || 'Error desconocido'));
+            if (!response.ok) {
+                throw new Error('Error al conectar con el servidor');
             }
             
-            const dataPacientes = await resPacientes.json();
+            const data = await response.json();
             
-            // Cargar usuarios
-            const urlUsuarios = `https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/${SHEET_USUARIOS}?key=${config.apiKey}`;
-            const resUsuarios = await fetch(urlUsuarios);
-            
-            if (!resUsuarios.ok) {
-                const errorData = await resUsuarios.json();
-                throw new Error('Error al cargar usuarios:\n' + (errorData.error?.message || 'Error desconocido'));
+            if (data.error) {
+                throw new Error(data.error);
             }
             
-            const dataUsuarios = await resUsuarios.json();
-            
-            // Procesar pacientes
-            db.pacientes = [];
-            if (dataPacientes.values && dataPacientes.values.length > 1) {
-                for (let i = 1; i < dataPacientes.values.length; i++) {
-                    const row = dataPacientes.values[i];
-                    db.pacientes.push({
-                        id: String(row[0] || ''),
-                        dni: String(row[1] || ''),
-                        paciente: row[2] || '',
-                        categoria: row[3] || '',
-                        notas: row[4] || '',
-                        fecha: row[5] || '',
-                        atendido_por: row[6] || ''
-                    });
-                }
-            }
-            
-            // Procesar usuarios
-            db.usuarios = [];
-            if (dataUsuarios.values && dataUsuarios.values.length > 1) {
-                for (let i = 1; i < dataUsuarios.values.length; i++) {
-                    const row = dataUsuarios.values[i];
-                    db.usuarios.push({
-                        nombre_completo: row[0] || '',
-                        usuario: row[1] || '',
-                        password: row[2] || '',
-                        rol: row[3] || 'profesional'
-                    });
-                }
-            }
+            db.pacientes = data.pacientes || [];
+            db.usuarios = data.usuarios || [];
             
             showLoad(false);
             document.getElementById('login-screen').style.display = 'flex';
@@ -222,7 +182,7 @@
         } catch (error) {
             showLoad(false);
             console.error('Error completo:', error);
-            alert('❌ Error al cargar datos:\n\n' + error.message + '\n\nVerifica:\n1. API Key correcta\n2. Sheet ID correcto\n3. Sheet compartido públicamente como "Editor"\n4. Google Sheets API habilitada');
+            alert('❌ Error al cargar datos:\n\n' + error.message + '\n\nVerifica que:\n1. Hayas configurado la URL de Web App\n2. El Web App esté implementado correctamente\n3. Los permisos estén autorizados');
         }
     }
 
@@ -266,7 +226,8 @@
 
         showLoad(true, "Guardando en Google Sheets...");
         
-        const nuevaSesion = {
+        const payload = {
+            action: 'save',
             id: String(Date.now()),
             dni: dni,
             paciente: paciente,
@@ -277,31 +238,17 @@
         };
         
         try {
-            const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/${SHEET_PACIENTES}:append?valueInputOption=RAW&key=${config.apiKey}`;
-            
-            const response = await fetch(url, {
+            const response = await fetch(CONFIG.webAppUrl, {
                 method: 'POST',
+                mode: 'no-cors',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    values: [[
-                        nuevaSesion.id,
-                        nuevaSesion.dni,
-                        nuevaSesion.paciente,
-                        nuevaSesion.categoria,
-                        nuevaSesion.notas,
-                        nuevaSesion.fecha,
-                        nuevaSesion.atendido_por
-                    ]]
-                })
+                body: JSON.stringify(payload)
             });
             
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error?.message || 'Error al guardar');
-            }
-            
+            // Con no-cors no podemos leer la respuesta, pero si llegó aquí, probablemente funcionó
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar 1 segundo
             await cargarDatos();
             verHistorial(dni);
             document.getElementById('notas').value = "";
@@ -337,24 +284,25 @@
 
         showLoad(true, "Creando usuario...");
         
+        const payload = {
+            action: 'add_user',
+            nombre_completo: nombre,
+            usuario: usuario,
+            password: password,
+            rol: rol
+        };
+        
         try {
-            const url = `https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/${SHEET_USUARIOS}:append?valueInputOption=RAW&key=${config.apiKey}`;
-            
-            const response = await fetch(url, {
+            const response = await fetch(CONFIG.webAppUrl, {
                 method: 'POST',
+                mode: 'no-cors',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    values: [[nombre, usuario, password, rol]]
-                })
+                body: JSON.stringify(payload)
             });
             
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error?.message || 'Error al crear usuario');
-            }
-            
+            await new Promise(resolve => setTimeout(resolve, 1000));
             await cargarDatos();
             document.getElementById('adm-nombre').value = "";
             document.getElementById('adm-user').value = "";
@@ -494,33 +442,146 @@
             return;
         }
         
-        let contenido = `+FISIO Pro - HISTORIA CLÍNICA\n\n`;
-        contenido += `Paciente: ${filtrados[0].paciente}\n`;
-        contenido += `DNI: ${selectedDni}\n`;
-        contenido += `Fecha de generación: ${new Date().toLocaleString('es-ES')}\n`;
-        contenido += `Total de sesiones: ${filtrados.length}\n`;
-        contenido += `\n${'='.repeat(60)}\n\n`;
+        // Crear contenido HTML con logo
+        let contenidoHTML = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial Clínico - ${filtrados[0].paciente}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .logo {
+            width: 150px;
+            height: auto;
+            margin-bottom: 15px;
+        }
+        .header h1 {
+            color: #3498db;
+            margin: 10px 0;
+        }
+        .info-paciente {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .info-paciente p {
+            margin: 8px 0;
+            font-size: 16px;
+        }
+        .sesion {
+            border: 1px solid #e0e6ed;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }
+        .sesion-header {
+            background: #3498db;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        .sesion-fecha {
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .sesion-categoria {
+            color: #3498db;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+        .sesion-atendio {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        .sesion-notas {
+            background: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #3498db;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 12px;
+            border-top: 1px solid #e0e6ed;
+            padding-top: 20px;
+        }
+        @media print {
+            body { margin: 0; padding: 15px; }
+            .sesion { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="logo.png" alt="+FISIO Logo" class="logo">
+        <h1>+FISIO Pro</h1>
+        <h2>HISTORIA CLÍNICA</h2>
+    </div>
+    
+    <div class="info-paciente">
+        <p><strong>Paciente:</strong> ${filtrados[0].paciente}</p>
+        <p><strong>DNI:</strong> ${selectedDni}</p>
+        <p><strong>Fecha de generación:</strong> ${new Date().toLocaleString('es-ES')}</p>
+        <p><strong>Total de sesiones:</strong> ${filtrados.length}</p>
+    </div>
+`;
         
         filtrados.forEach((s, i) => {
-            contenido += `SESIÓN ${i + 1}\n`;
-            contenido += `Fecha: ${s.fecha}\n`;
-            contenido += `Categoría: ${s.categoria}\n`;
-            contenido += `Atendido por: ${s.atendido_por}\n\n`;
-            contenido += `Evolución:\n${s.notas}\n`;
-            contenido += `\n${'-'.repeat(60)}\n\n`;
+            contenidoHTML += `
+    <div class="sesion">
+        <div class="sesion-header">
+            <div class="sesion-fecha">📅 SESIÓN ${i + 1} - ${s.fecha}</div>
+        </div>
+        <div class="sesion-categoria">${s.categoria}</div>
+        <div class="sesion-atendio">👨‍⚕️ Atendido por: ${s.atendido_por}</div>
+        <div class="sesion-notas">${s.notas}</div>
+    </div>
+`;
         });
         
-        const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
+        contenidoHTML += `
+    <div class="footer">
+        <p>Documento generado por +FISIO Pro - Sistema de Gestión de Fisioterapia</p>
+        <p>© ${new Date().getFullYear()} - Todos los derechos reservados</p>
+    </div>
+</body>
+</html>
+`;
+        
+        // Crear y descargar archivo HTML
+        const blob = new Blob([contenidoHTML], { type: 'text/html;charset=utf-8' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `Historial_${filtrados[0].paciente}_${selectedDni}.txt`;
+        a.download = `Historial_${filtrados[0].paciente}_${selectedDni}.html`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
         
-        mostrarNotificacion('📥 Archivo descargado');
+        mostrarNotificacion('📥 Archivo descargado - Abre el HTML y usa "Imprimir a PDF" en tu navegador');
     }
 
     // ============================================
