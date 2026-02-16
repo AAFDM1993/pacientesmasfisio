@@ -168,9 +168,12 @@
         cargarDatos();
     }
 
-    async function cargarDatos() {
+    async function cargarDatos(mostrarCarga = true) {
         try {
-            showLoad(true, 'Sincronizando con Google Sheets...');
+            if (mostrarCarga) {
+                showLoad(true, 'Cargando sistema...');
+            }
+            
             const url = `${CONFIG.webAppUrl}?action=loadData`;
             const response = await fetch(url);
             
@@ -182,10 +185,12 @@
             db.pacientes = data.pacientes || [];
             db.usuarios = data.usuarios || [];
             
-            showLoad(false);
-            document.getElementById('login-screen').style.display = 'flex';
+            if (mostrarCarga) {
+                showLoad(false);
+                document.getElementById('login-screen').style.display = 'flex';
+            }
         } catch (error) {
-            showLoad(false);
+            if (mostrarCarga) showLoad(false);
             alert('❌ Error al cargar datos: ' + error.message);
         }
     }
@@ -271,14 +276,16 @@
             
             if (result.status === 'success') {
                 cerrarModalPassword();
-                await cargarDatos();
+                
+                showLoad(false);
                 mostrarNotificacion('✅ Contraseña cambiada');
                 alert('✅ Contraseña actualizada correctamente');
+                
+                // Recargar datos en segundo plano sin mostrar pantalla
+                cargarDatos(false);
             } else {
                 throw new Error(result.message || 'Error al cambiar contraseña');
             }
-            
-            showLoad(false);
         } catch (error) {
             showLoad(false);
             alert('❌ Error: ' + error.message);
@@ -318,15 +325,23 @@
             const result = await response.json();
             
             if (result.status === 'success') {
-                await cargarDatos();
+                // Agregar la sesión localmente para actualización instantánea
+                db.pacientes.push(payload);
+                
+                // Actualizar historial inmediatamente
                 verHistorial(dni);
+                
+                // Limpiar notas
                 document.getElementById('notas').value = "";
+                
+                showLoad(false);
                 mostrarNotificacion('✅ Sesión guardada');
+                
+                // Recargar datos en segundo plano sin mostrar pantalla
+                cargarDatos(false);
             } else {
                 throw new Error(result.message || 'Error al guardar');
             }
-            
-            showLoad(false);
         } catch (error) {
             showLoad(false);
             alert('❌ Error: ' + error.message);
@@ -359,14 +374,20 @@
             const result = await response.json();
             
             if (result.status === 'success') {
-                await cargarDatos();
+                // Eliminar localmente para actualización instantánea
+                db.pacientes = db.pacientes.filter(p => p.id !== id);
+                
+                // Actualizar historial inmediatamente
                 verHistorial(selectedDni);
+                
+                showLoad(false);
                 mostrarNotificacion('✅ Sesión eliminada');
+                
+                // Recargar datos en segundo plano sin mostrar pantalla
+                cargarDatos(false);
             } else {
                 throw new Error(result.message || 'Error al eliminar');
             }
-            
-            showLoad(false);
         } catch (error) {
             showLoad(false);
             alert('❌ Error: ' + error.message);
@@ -409,19 +430,20 @@
             const result = await response.json();
             
             if (result.status === 'success') {
+                // Limpiar formulario
                 document.getElementById('adm-nombre').value = "";
                 document.getElementById('adm-user').value = "";
                 document.getElementById('adm-pass').value = "";
                 
-                await cargarDatos();
-                
+                showLoad(false);
                 mostrarNotificacion('✅ Usuario creado');
                 alert(`✅ Usuario creado\n\nUsuario: ${usuario}\nContraseña: ${password}\n\n¡Ya puede iniciar sesión!`);
+                
+                // Recargar datos en segundo plano sin mostrar pantalla
+                cargarDatos(false);
             } else {
                 throw new Error(result.message || 'Error al crear usuario');
             }
-            
-            showLoad(false);
         } catch (error) {
             showLoad(false);
             alert('❌ Error: ' + error.message);
@@ -529,8 +551,13 @@
     }
 
     function sincronizar() {
-        cargarDatos();
         mostrarNotificacion('🔄 Sincronizando...');
+        cargarDatos(false).then(() => {
+            if (selectedDni) {
+                verHistorial(selectedDni);
+            }
+            renderLista();
+        });
     }
 
     function exportarPDF() {
