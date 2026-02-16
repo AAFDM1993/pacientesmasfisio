@@ -13,40 +13,34 @@
         }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg); margin: 0; color: #333; }
         
-        /* Loader */
         #loading { position: fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; }
         .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--blue); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Login */
         #login-screen { display: none; align-items: center; justify-content: center; min-height: 100vh; }
         .login-card { background: white; padding: 40px; border-radius: 16px; box-shadow: var(--shadow); width: 320px; text-align: center; }
         
-        /* App Layout */
         #main-app { display: none; max-width: 1300px; margin: 0 auto; padding: 20px; gap: 20px; grid-template-columns: 1fr; }
         @media (min-width: 1024px) { #main-app { grid-template-columns: 450px 1fr; } }
         
         .panel { background: white; padding: 25px; border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 20px; box-sizing: border-box; }
         h3 { margin-top: 0; border-bottom: 2px solid #f0f2f5; padding-bottom: 10px; font-size: 1.1rem; color: var(--primary); }
         
-        /* Form Elements */
         .form-row { display: grid; grid-template-columns: 120px 1fr; gap: 10px; margin-bottom: 10px; }
         input, textarea, select { width: 100%; padding: 12px; border: 1.5px solid #e0e6ed; border-radius: 8px; font-size: 0.95rem; outline: none; box-sizing: border-box; }
-        input:focus, textarea:focus { border-color: var(--blue); }
         
         .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 15px 0; }
         .cat-btn { background: #f8f9fa; border: 1.5px solid #e0e6ed; padding: 10px; border-radius: 8px; cursor: pointer; text-align: center; font-size: 0.8rem; font-weight: 600; }
         .cat-btn.active { background: var(--blue); color: white; border-color: var(--blue); }
         
         .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .btn-save { background: var(--accent); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; }
+        .btn-save { background: var(--accent); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .btn-clear { background: var(--gray); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .btn-pdf { background: var(--blue); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }
+        .btn-pdf { background: var(--blue); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; }
         
-        /* Lists and Cards */
-        .paciente-item { padding: 12px; border-bottom: 1px solid #f0f2f5; cursor: pointer; transition: 0.2s; }
+        .paciente-item { padding: 12px; border-bottom: 1px solid #f0f2f5; cursor: pointer; }
         .paciente-item:hover { background: #f8fbff; }
-        .sesion-card { border: 1px solid #eef2f6; padding: 15px; border-radius: 10px; margin-bottom: 15px; background: #fff; }
+        .sesion-card { border: 1px solid #eef2f6; padding: 15px; border-radius: 10px; margin-bottom: 15px; }
     </style>
 </head>
 <body>
@@ -59,11 +53,10 @@
     <div id="login-screen">
         <div class="login-card">
             <h1 style="color:var(--blue); margin:0 0 10px 0;">+FISIO</h1>
-            <p style="color:var(--gray); margin-bottom:25px;">Plataforma de Fisioterapia</p>
             <input type="text" id="userInput" placeholder="Usuario">
             <input type="password" id="passInput" placeholder="Contraseña">
-            <button class="btn-save" onclick="login()" style="width:100%">INGRESAR</button>
-            <p id="error-msg" style="color:var(--danger); display:none; font-size:0.85rem; margin-top:15px;">⚠️ Usuario o clave incorrectos</p>
+            <button class="btn-save" onclick="login()" style="width:100%; margin-top:10px;">INGRESAR</button>
+            <p id="error-msg" style="color:var(--danger); display:none; margin-top:15px;">⚠️ Clave incorrecta</p>
         </div>
     </div>
 
@@ -72,26 +65,21 @@
             <div class="panel">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                     <span id="user-tag" style="font-weight:bold; color:var(--admin);"></span>
-                    <button onclick="location.reload()" style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold;">SALIR</button>
+                    <button onclick="google.script.run.withSuccessHandler(()=>location.reload()).doGet()" style="background:none; border:none; color:var(--danger); cursor:pointer;">SALIR</button>
                 </div>
-                
                 <h3>📝 Registro de Sesión</h3>
-                
                 <div class="form-row">
                     <input type="text" id="dni" placeholder="DNI" oninput="autoBuscar(this.value)">
                     <input type="text" id="paciente" placeholder="Nombre completo">
                 </div>
-
                 <div class="cat-grid">
                     <div class="cat-btn active" onclick="setCat(this, 'Fisioterapia Traumatológica')">🦴 Trauma</div>
                     <div class="cat-btn" onclick="setCat(this, 'Fisioterapia Reumatológica')">💧 Reuma</div>
                     <div class="cat-btn" onclick="setCat(this, 'Neuropediatría')">👶 Neuro Pedia</div>
                     <div class="cat-btn" onclick="setCat(this, 'Neuro Adultos')">🧠 Neuro Adulto</div>
                 </div>
-                
                 <input type="hidden" id="categoria" value="Fisioterapia Traumatológica">
-                <textarea id="notas" rows="6" placeholder="Detalles de la evolución clínica..."></textarea>
-                
+                <textarea id="notas" rows="6" placeholder="Detalles de la evolución..."></textarea>
                 <div class="btn-group">
                     <button class="btn-clear" onclick="limpiarCampos()">LIMPIAR</button>
                     <button class="btn-save" onclick="guardar()">GUARDAR</button>
@@ -99,63 +87,53 @@
             </div>
 
             <div class="panel">
-                <h3>👥 Buscador de Pacientes</h3>
-                <input type="text" placeholder="🔍 Buscar por nombre o DNI..." onkeyup="renderLista(this.value)">
-                <div id="listaPacientes" style="max-height: 250px; overflow-y: auto; margin-top:10px;"></div>
-                
-                <button id="btnAdmin" class="btn-save" onclick="toggleAdmin()" style="display:none; margin-top:20px; background:var(--admin);">⚙️ PANEL ADMINISTRACIÓN</button>
+                <h3>👥 Buscador</h3>
+                <input type="text" placeholder="🔍 Buscar..." onkeyup="renderLista(this.value)">
+                <div id="listaPacientes" style="max-height: 200px; overflow-y: auto; margin-top:10px;"></div>
+                <button id="btnAdmin" class="btn-save" onclick="toggleAdmin()" style="display:none; margin-top:20px; background:var(--admin); width:100%;">⚙️ PANEL ADMIN</button>
             </div>
 
             <div id="admin-panel" class="panel" style="display:none; border:2px solid var(--admin);">
-                <h3 style="color:var(--admin)">🔑 Gestión de Usuarios</h3>
-                <input type="text" id="adm-nombre" placeholder="Nombre y Apellido">
-                <select id="adm-rol">
-                    <option value="profesional">Profesional</option>
-                    <option value="admin">Administrador</option>
-                </select>
-                <input type="text" id="adm-user" placeholder="Usuario de acceso">
-                <input type="password" id="adm-pass" placeholder="Contraseña">
-                <button class="btn-save" style="background:var(--admin); width:100%;" onclick="crearUsuario()">CREAR USUARIO</button>
+                <h3 style="color:var(--admin)">🔑 Nuevo Usuario</h3>
+                <input type="text" id="adm-nombre" placeholder="Nombre">
+                <select id="adm-rol"><option value="profesional">Profesional</option><option value="admin">Admin</option></select>
+                <input type="text" id="adm-user" placeholder="Usuario">
+                <input type="password" id="adm-pass" placeholder="Clave">
+                <button class="btn-save" style="background:var(--admin); width:100%;" onclick="crearUsuario()">CREAR</button>
             </div>
         </aside>
 
         <main class="panel">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h2 id="titulo-historial" style="margin:0; font-size:1.3rem;">Ficha Clínica</h2>
-                <button id="btnPdf" class="btn-pdf" style="display:none;" onclick="exportarPDF()">📥 EXPORTAR PDF</button>
+                <h2 id="titulo-historial" style="margin:0;">Ficha Clínica</h2>
+                <button id="btnPdf" class="btn-pdf" style="display:none;" onclick="exportarPDF()">📥 PDF</button>
             </div>
-            <div id="historial-body" style="margin-top:20px;">
-                <p style="text-align:center; color:var(--gray); margin-top:100px;">Seleccione un paciente para visualizar su historial.</p>
-            </div>
+            <div id="historial-body" style="margin-top:20px;"></div>
         </main>
     </div>
 
 <script>
-    const URL_APP = "https://script.google.com/macros/s/AKfycbwpa8wKfU-YKGoEgyYU3B422JUol37QdPCBVvqG1QTzv6Nlt8r4MqNz0BMtiCgMi1_a9A/exec"; 
-
     let db = { pacientes: [], usuarios: [] };
     let currentUser = null;
-    let logoBase64 = null;
     let selectedDni = "";
 
-    async function init() {
-        try {
-            const resp = await fetch(URL_APP + "?action=load");
-            db = await resp.json();
+    // 1. INICIALIZACIÓN
+    function init() {
+        google.script.run.withSuccessHandler(function(res) {
+            db = JSON.parse(res);
             document.getElementById('loading').style.display = 'none';
             document.getElementById('login-screen').style.display = 'flex';
-        } catch(e) {
-            document.getElementById('loading-text').innerHTML = `<span style="color:red">ERROR DE CONEXIÓN</span>`;
-        }
+        }).loadData();
     }
 
+    // 2. LOGIN
     function login() {
         const u = document.getElementById('userInput').value.trim();
         const p = document.getElementById('passInput').value.trim();
         const user = db.usuarios.find(x => x.usuario === u && x.password === p);
 
         if(user || (u === "admin" && p === "1234")) {
-            currentUser = user || { nombre_completo: "Administrador Maestro", rol: "admin" };
+            currentUser = user || { nombre_completo: "Admin Maestro", rol: "admin" };
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'grid';
             document.getElementById('user-tag').innerText = "👤 " + currentUser.nombre_completo;
@@ -166,13 +144,66 @@
         }
     }
 
-    function autoBuscar(val) {
-        const dniStr = String(val).trim();
-        const p = db.pacientes.find(x => String(x.dni) === dniStr);
-        if(p) {
-            document.getElementById('paciente').value = p.paciente;
-            verHistorial(dniStr);
-        }
+    // 3. GUARDAR (Integrado con Apps Script)
+    function guardar() {
+        const dni = String(document.getElementById('dni').value).trim();
+        const paciente = document.getElementById('paciente').value.trim();
+        const notas = document.getElementById('notas').value.trim();
+        
+        if(!dni || !notas || !paciente) return alert("Faltan datos");
+
+        showLoad(true, "Guardando en Google Sheets...");
+        const payload = {
+            action: 'save',
+            id: String(Date.now()),
+            dni: dni,
+            paciente: paciente,
+            notas: notas,
+            categoria: document.getElementById('categoria').value,
+            fecha: new Date().toLocaleString(),
+            atendido_por: currentUser.nombre_completo
+        };
+
+        google.script.run.withSuccessHandler(function() {
+            refrescarYVer(dni);
+        }).doPost({postData: {contents: JSON.stringify(payload)}});
+    }
+
+    // 4. BORRAR (Integrado con Apps Script)
+    function borrar(id) {
+        if(!confirm("¿Eliminar sesión?")) return;
+        showLoad(true, "Eliminando...");
+        google.script.run.withSuccessHandler(function() {
+            refrescarYVer(selectedDni);
+        }).doPost({postData: {contents: JSON.stringify({action: 'delete_session', id: id})}});
+    }
+
+    // 5. CREAR USUARIO (Integrado con Apps Script)
+    function crearUsuario() {
+        const payload = {
+            action: 'add_user',
+            nombre_completo: document.getElementById('adm-nombre').value,
+            usuario: document.getElementById('adm-user').value,
+            password: document.getElementById('adm-pass').value,
+            rol: document.getElementById('adm-rol').value
+        };
+        showLoad(true, "Creando usuario...");
+        google.script.run.withSuccessHandler(function() {
+            refrescarYVer(null);
+            alert("Usuario creado");
+        }).doPost({postData: {contents: JSON.stringify(payload)}});
+    }
+
+    // --- FUNCIONES DE APOYO ---
+
+    function refrescarYVer(dni) {
+        google.script.run.withSuccessHandler(function(res) {
+            db = JSON.parse(res);
+            renderLista();
+            if(dni) verHistorial(dni);
+            document.getElementById('notas').value = "";
+            showLoad(false);
+        }).loadData();
     }
 
     function renderLista(f="") {
@@ -184,9 +215,9 @@
             unicos[d].toLowerCase().includes(f.toLowerCase()) || d.includes(f)
         ).map(d => `
             <div class="paciente-item" onclick="seleccionar('${d}', '${unicos[d]}')">
-                <strong>${unicos[d]}</strong><br><small style="color:var(--blue)">DNI: ${d}</small>
+                <strong>${unicos[d]}</strong><br><small>DNI: ${d}</small>
             </div>
-        `).join('') || '<p style="font-size:0.8rem; color:gray;">No se encontraron pacientes.</p>';
+        `).join('') || '<p>Sin resultados.</p>';
     }
 
     function seleccionar(d, n) {
@@ -199,106 +230,23 @@
         selectedDni = String(d);
         const filtrados = db.pacientes.filter(x => String(x.dni) === selectedDni).reverse();
         document.getElementById('btnPdf').style.display = filtrados.length ? 'block' : 'none';
-        document.getElementById('titulo-historial').innerText = filtrados.length ? `Historial: ${filtrados[0].paciente}` : "Ficha Clínica";
+        document.getElementById('titulo-historial').innerText = "Historial: " + (filtrados[0]?.paciente || "");
         
         document.getElementById('historial-body').innerHTML = filtrados.map(s => `
             <div class="sesion-card">
-                <div style="display:flex; justify-content:space-between; align-items:start;">
-                    <span style="background:#e1f5fe; color:#0288d1; padding:3px 10px; border-radius:15px; font-size:0.75rem; font-weight:bold;">${s.categoria}</span>
-                    <button style="color:var(--danger); border:none; background:none; cursor:pointer; font-weight:bold;" onclick="borrar('${s.id}')">✕</button>
+                <div style="display:flex; justify-content:space-between;">
+                    <small><b>${s.fecha}</b></small>
+                    <button onclick="borrar('${s.id}')" style="color:red; border:none; background:none; cursor:pointer;">✕</button>
                 </div>
-                <div style="margin:8px 0; color:var(--gray); font-size:0.85rem;">
-                    📅 ${s.fecha} | 🩺 ${s.atendido_por}
-                </div>
-                <p style="margin:10px 0 0 0; line-height:1.5;">${s.notas}</p>
+                <div style="color:var(--blue); font-size:0.8rem; margin:5px 0;">${s.categoria} | Atendió: ${s.atendido_por}</div>
+                <p>${s.notas}</p>
             </div>
-        `).join('') || '<p style="text-align:center; color:gray;">Sin registros.</p>';
+        `).join('') || '<p>No hay registros previos.</p>';
     }
 
-    function limpiarCampos() {
-        document.getElementById('dni').value = "";
-        document.getElementById('paciente').value = "";
-        document.getElementById('notas').value = "";
-        document.getElementById('historial-body').innerHTML = '<p style="text-align:center; color:var(--gray); margin-top:100px;">Seleccione un paciente para visualizar su historial.</p>';
-        document.getElementById('btnPdf').style.display = "none";
-        document.getElementById('titulo-historial').innerText = "Ficha Clínica";
-        selectedDni = "";
-    }
-
-    async function guardar() {
-        const dni = String(document.getElementById('dni').value).trim();
-        const paciente = document.getElementById('paciente').value.trim();
-        const notas = document.getElementById('notas').value.trim();
-        
-        if(!dni || !notas || !paciente) return alert("Complete DNI, Nombre y Notas");
-
-        showLoad(true, "Guardando evolución...");
-        const payload = {
-            action: 'save',
-            id: String(Date.now()),
-            dni: dni,
-            paciente: paciente,
-            notas: notas,
-            categoria: document.getElementById('categoria').value,
-            fecha: new Date().toLocaleString(),
-            atendido_por: currentUser.nombre_completo
-        };
-
-        await fetch(URL_APP, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-        
-        // Recarga automática
-        const r = await fetch(URL_APP + "?action=load");
-        db = await r.json();
-        
-        document.getElementById('notas').value = "";
-        verHistorial(dni);
-        renderLista();
-        showLoad(false);
-    }
-
-    async function borrar(id) {
-        if(!confirm("¿Desea borrar esta nota permanentemente?")) return;
-        showLoad(true, "Eliminando registro...");
-        await fetch(URL_APP, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'delete_session', id: id }) });
-        
-        const r = await fetch(URL_APP + "?action=load");
-        db = await r.json();
-        
-        verHistorial(selectedDni);
-        showLoad(false);
-    }
-
-    async function crearUsuario() {
-        const n = document.getElementById('adm-nombre').value.trim();
-        const u = document.getElementById('adm-user').value.trim();
-        const p = document.getElementById('adm-pass').value.trim();
-        const r = document.getElementById('adm-rol').value;
-
-        if(!n || !u || !p) return alert("Complete todos los datos del usuario");
-
-        showLoad(true, "Registrando usuario...");
-        await fetch(URL_APP, { 
-            method: 'POST', 
-            mode: 'no-cors', 
-            body: JSON.stringify({ action: 'add_user', nombre_completo: n, usuario: u, password: p, rol: r }) 
-        });
-
-        // Limpiar admin inputs
-        document.getElementById('adm-nombre').value = "";
-        document.getElementById('adm-user').value = "";
-        document.getElementById('adm-pass').value = "";
-        
-        const resp = await fetch(URL_APP + "?action=load");
-        db = await resp.json();
-        
-        alert("Usuario creado exitosamente");
-        showLoad(false);
-    }
-
-    function toggleAdmin() {
-        const p = document.getElementById('admin-panel');
-        p.style.display = p.style.display === 'none' ? 'block' : 'none';
-        if(p.style.display === 'block') p.scrollIntoView({behavior: 'smooth'});
+    function autoBuscar(val) {
+        const p = db.pacientes.find(x => String(x.dni) === String(val).trim());
+        if(p) { document.getElementById('paciente').value = p.paciente; verHistorial(val); }
     }
 
     function setCat(el, v) {
@@ -312,41 +260,36 @@
         document.getElementById('loading').style.display = s ? 'flex' : 'none';
     }
 
-    window.onload = init;
+    function limpiarCampos() {
+        document.getElementById('dni').value = "";
+        document.getElementById('paciente').value = "";
+        document.getElementById('notas').value = "";
+    }
+
+    function toggleAdmin() {
+        const p = document.getElementById('admin-panel');
+        p.style.display = p.style.display === 'none' ? 'block' : 'none';
+    }
 
     function exportarPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         const filtrados = db.pacientes.filter(x => String(x.dni) === selectedDni);
-
-        doc.setFontSize(18);
-        doc.setTextColor(44, 62, 80);
-        doc.text("+FISIO - HISTORIA CLÍNICA", 105, 20, { align: 'center' });
-        
-        doc.setFontSize(11);
-        doc.setTextColor(100);
-        doc.text(`Paciente: ${filtrados[0].paciente.toUpperCase()}`, 20, 35);
-        doc.text(`DNI: ${selectedDni}`, 20, 42);
-        doc.line(20, 45, 190, 45);
-
-        let y = 55;
-        filtrados.reverse().forEach(s => {
-            if(y > 270) { doc.addPage(); y = 20; }
-            doc.setFont(undefined, 'bold');
-            doc.setTextColor(39, 174, 96);
+        doc.text("+FISIO - HISTORIA CLÍNICA", 20, 20);
+        doc.text(`Paciente: ${filtrados[0].paciente} (DNI: ${selectedDni})`, 20, 30);
+        let y = 40;
+        filtrados.forEach(s => {
+            doc.setFontSize(10);
             doc.text(`${s.fecha} - ${s.categoria}`, 20, y);
             y += 7;
-            doc.setFont(undefined, 'normal');
-            doc.setTextColor(50);
-            const lines = doc.splitTextToSize(s.notas.replace(/[^\x00-\x7F]/g, ""), 170);
+            const lines = doc.splitTextToSize(s.notas, 170);
             doc.text(lines, 20, y);
-            y += (lines.length * 6) + 12;
-            doc.setDrawColor(230);
-            doc.line(20, y-8, 190, y-8);
+            y += (lines.length * 6) + 10;
         });
         doc.save(`Ficha_${selectedDni}.pdf`);
     }
+
+    window.onload = init;
 </script>
 </body>
 </html>
-
