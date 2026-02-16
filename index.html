@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>+FISIO Pro | Gestión Especializada</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root { 
             --primary: #2c3e50; --accent: #27ae60; --bg: #f0f2f5; 
@@ -21,12 +20,12 @@
         .login-card { background: white; padding: 40px; border-radius: 16px; box-shadow: var(--shadow); width: 320px; text-align: center; }
         
         #main-app { display: none; max-width: 1300px; margin: 0 auto; padding: 20px; gap: 20px; grid-template-columns: 1fr; }
-        @media (min-width: 1024px) { #main-app { grid-template-columns: 450px 1fr; } }
+        @media (min-width: 1024px) { #main-app { display: grid; grid-template-columns: 450px 1fr; } }
         
         .panel { background: white; padding: 25px; border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 20px; box-sizing: border-box; }
         h3 { margin-top: 0; border-bottom: 2px solid #f0f2f5; padding-bottom: 10px; font-size: 1.1rem; color: var(--primary); }
         
-        .form-row { display: grid; grid-template-columns: 120px 1fr; gap: 10px; margin-bottom: 10px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
         input, textarea, select { width: 100%; padding: 12px; border: 1.5px solid #e0e6ed; border-radius: 8px; font-size: 0.95rem; outline: none; box-sizing: border-box; }
         
         .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 15px 0; }
@@ -53,8 +52,8 @@
     <div id="login-screen">
         <div class="login-card">
             <h1 style="color:var(--blue); margin:0 0 10px 0;">+FISIO</h1>
-            <input type="text" id="userInput" placeholder="Usuario">
-            <input type="password" id="passInput" placeholder="Contraseña">
+            <input type="text" id="userInput" placeholder="Usuario" style="margin-bottom:10px;">
+            <input type="password" id="passInput" placeholder="Contraseña" style="margin-bottom:10px;">
             <button class="btn-save" onclick="login()" style="width:100%; margin-top:10px;">INGRESAR</button>
             <p id="error-msg" style="color:var(--danger); display:none; margin-top:15px;">⚠️ Clave incorrecta</p>
         </div>
@@ -65,7 +64,7 @@
             <div class="panel">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                     <span id="user-tag" style="font-weight:bold; color:var(--admin);"></span>
-                    <button onclick="google.script.run.withSuccessHandler(()=>location.reload()).doGet()" style="background:none; border:none; color:var(--danger); cursor:pointer;">SALIR</button>
+                    <button onclick="cerrarSesion()" style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold;">SALIR</button>
                 </div>
                 <h3>📝 Registro de Sesión</h3>
                 <div class="form-row">
@@ -95,10 +94,10 @@
 
             <div id="admin-panel" class="panel" style="display:none; border:2px solid var(--admin);">
                 <h3 style="color:var(--admin)">🔑 Nuevo Usuario</h3>
-                <input type="text" id="adm-nombre" placeholder="Nombre">
-                <select id="adm-rol"><option value="profesional">Profesional</option><option value="admin">Admin</option></select>
-                <input type="text" id="adm-user" placeholder="Usuario">
-                <input type="password" id="adm-pass" placeholder="Clave">
+                <input type="text" id="adm-nombre" placeholder="Nombre" style="margin-bottom:10px;">
+                <select id="adm-rol" style="margin-bottom:10px;"><option value="profesional">Profesional</option><option value="admin">Admin</option></select>
+                <input type="text" id="adm-user" placeholder="Usuario" style="margin-bottom:10px;">
+                <input type="password" id="adm-pass" placeholder="Clave" style="margin-bottom:10px;">
                 <button class="btn-save" style="background:var(--admin); width:100%;" onclick="crearUsuario()">CREAR</button>
             </div>
         </aside>
@@ -106,7 +105,7 @@
         <main class="panel">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <h2 id="titulo-historial" style="margin:0;">Ficha Clínica</h2>
-                <button id="btnPdf" class="btn-pdf" style="display:none;" onclick="exportarPDF()">📥 PDF</button>
+                <button id="btnPdf" class="btn-pdf" style="display:none;" onclick="exportarPDF()">📥 EXPORTAR</button>
             </div>
             <div id="historial-body" style="margin-top:20px;"></div>
         </main>
@@ -123,6 +122,9 @@
             db = JSON.parse(res);
             document.getElementById('loading').style.display = 'none';
             document.getElementById('login-screen').style.display = 'flex';
+        }).withFailureHandler(function(error) {
+            alert('Error al cargar datos: ' + error.message);
+            document.getElementById('loading-text').innerText = 'Error de conexión';
         }).loadData();
     }
 
@@ -150,7 +152,7 @@
         const paciente = document.getElementById('paciente').value.trim();
         const notas = document.getElementById('notas').value.trim();
         
-        if(!dni || !notas || !paciente) return alert("Faltan datos");
+        if(!dni || !notas || !paciente) return alert("⚠️ Faltan datos: DNI, Nombre y Notas son obligatorios");
 
         showLoad(true, "Guardando en Google Sheets...");
         const payload = {
@@ -160,50 +162,85 @@
             paciente: paciente,
             notas: notas,
             categoria: document.getElementById('categoria').value,
-            fecha: new Date().toLocaleString(),
+            fecha: new Date().toLocaleString('es-ES'),
             atendido_por: currentUser.nombre_completo
         };
 
-        google.script.run.withSuccessHandler(function() {
-            refrescarYVer(dni);
-        }).doPost({postData: {contents: JSON.stringify(payload)}});
+        google.script.run
+            .withSuccessHandler(function() {
+                refrescarYVer(dni);
+            })
+            .withFailureHandler(function(error) {
+                alert('Error al guardar: ' + error.message);
+                showLoad(false);
+            })
+            .doPost({postData: {contents: JSON.stringify(payload)}});
     }
 
     // 4. BORRAR (Integrado con Apps Script)
     function borrar(id) {
-        if(!confirm("¿Eliminar sesión?")) return;
+        if(!confirm("¿Eliminar esta sesión?")) return;
         showLoad(true, "Eliminando...");
-        google.script.run.withSuccessHandler(function() {
-            refrescarYVer(selectedDni);
-        }).doPost({postData: {contents: JSON.stringify({action: 'delete_session', id: id})}});
+        google.script.run
+            .withSuccessHandler(function() {
+                refrescarYVer(selectedDni);
+            })
+            .withFailureHandler(function(error) {
+                alert('Error al eliminar: ' + error.message);
+                showLoad(false);
+            })
+            .doPost({postData: {contents: JSON.stringify({action: 'delete_session', id: id})}});
     }
 
     // 5. CREAR USUARIO (Integrado con Apps Script)
     function crearUsuario() {
+        const nombre = document.getElementById('adm-nombre').value.trim();
+        const usuario = document.getElementById('adm-user').value.trim();
+        const password = document.getElementById('adm-pass').value.trim();
+        const rol = document.getElementById('adm-rol').value;
+
+        if(!nombre || !usuario || !password) return alert("⚠️ Completa todos los campos");
+
         const payload = {
             action: 'add_user',
-            nombre_completo: document.getElementById('adm-nombre').value,
-            usuario: document.getElementById('adm-user').value,
-            password: document.getElementById('adm-pass').value,
-            rol: document.getElementById('adm-rol').value
+            nombre_completo: nombre,
+            usuario: usuario,
+            password: password,
+            rol: rol
         };
+        
         showLoad(true, "Creando usuario...");
-        google.script.run.withSuccessHandler(function() {
-            refrescarYVer(null);
-            alert("Usuario creado");
-        }).doPost({postData: {contents: JSON.stringify(payload)}});
+        google.script.run
+            .withSuccessHandler(function() {
+                refrescarYVer(null);
+                alert("✅ Usuario creado exitosamente");
+                document.getElementById('adm-nombre').value = "";
+                document.getElementById('adm-user').value = "";
+                document.getElementById('adm-pass').value = "";
+            })
+            .withFailureHandler(function(error) {
+                alert('Error al crear usuario: ' + error.message);
+                showLoad(false);
+            })
+            .doPost({postData: {contents: JSON.stringify(payload)}});
     }
 
     // --- FUNCIONES DE APOYO ---
 
     function refrescarYVer(dni) {
-        google.script.run.withSuccessHandler(function(res) {
-            db = JSON.parse(res);
-            renderLista();
-            if(dni) verHistorial(dni);
-            document.getElementById('notas').value = "";
-            showLoad(false);
-        }).loadData();
+        google.script.run
+            .withSuccessHandler(function(res) {
+                db = JSON.parse(res);
+                renderLista();
+                if(dni) verHistorial(dni);
+                document.getElementById('notas').value = "";
+                showLoad(false);
+            })
+            .withFailureHandler(function(error) {
+                alert('Error al refrescar: ' + error.message);
+                showLoad(false);
+            })
+            .loadData();
     }
 
     function renderLista(f="") {
@@ -211,13 +248,20 @@
         const unicos = {};
         db.pacientes.forEach(p => unicos[String(p.dni)] = p.paciente);
         
-        div.innerHTML = Object.keys(unicos).filter(d => 
+        const keys = Object.keys(unicos).filter(d => 
             unicos[d].toLowerCase().includes(f.toLowerCase()) || d.includes(f)
-        ).map(d => `
-            <div class="paciente-item" onclick="seleccionar('${d}', '${unicos[d]}')">
+        );
+
+        if(keys.length === 0) {
+            div.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">Sin resultados</p>';
+            return;
+        }
+
+        div.innerHTML = keys.map(d => `
+            <div class="paciente-item" onclick="seleccionar('${d}', '${unicos[d].replace(/'/g, "\\'")}')">
                 <strong>${unicos[d]}</strong><br><small>DNI: ${d}</small>
             </div>
-        `).join('') || '<p>Sin resultados.</p>';
+        `).join('');
     }
 
     function seleccionar(d, n) {
@@ -230,23 +274,32 @@
         selectedDni = String(d);
         const filtrados = db.pacientes.filter(x => String(x.dni) === selectedDni).reverse();
         document.getElementById('btnPdf').style.display = filtrados.length ? 'block' : 'none';
-        document.getElementById('titulo-historial').innerText = "Historial: " + (filtrados[0]?.paciente || "");
+        document.getElementById('titulo-historial').innerText = "Historial: " + (filtrados[0]?.paciente || "Sin paciente");
         
+        if(filtrados.length === 0) {
+            document.getElementById('historial-body').innerHTML = '<p style="text-align:center; color:#999; padding:40px;">📋 No hay registros previos para este paciente</p>';
+            return;
+        }
+
         document.getElementById('historial-body').innerHTML = filtrados.map(s => `
             <div class="sesion-card">
-                <div style="display:flex; justify-content:space-between;">
-                    <small><b>${s.fecha}</b></small>
-                    <button onclick="borrar('${s.id}')" style="color:red; border:none; background:none; cursor:pointer;">✕</button>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <small><b>📅 ${s.fecha}</b></small>
+                    <button onclick="borrar('${s.id}')" style="color:var(--danger); border:none; background:none; cursor:pointer; font-size:1.2rem;" title="Eliminar sesión">✕</button>
                 </div>
-                <div style="color:var(--blue); font-size:0.8rem; margin:5px 0;">${s.categoria} | Atendió: ${s.atendido_por}</div>
-                <p>${s.notas}</p>
+                <div style="color:var(--blue); font-size:0.85rem; margin:8px 0; font-weight:600;">${s.categoria}</div>
+                <div style="color:var(--gray); font-size:0.8rem; margin-bottom:10px;">👨‍⚕️ Atendió: ${s.atendido_por}</div>
+                <p style="margin:0; line-height:1.6;">${s.notas}</p>
             </div>
-        `).join('') || '<p>No hay registros previos.</p>';
+        `).join('');
     }
 
     function autoBuscar(val) {
         const p = db.pacientes.find(x => String(x.dni) === String(val).trim());
-        if(p) { document.getElementById('paciente').value = p.paciente; verHistorial(val); }
+        if(p) { 
+            document.getElementById('paciente').value = p.paciente; 
+            verHistorial(val); 
+        }
     }
 
     function setCat(el, v) {
@@ -256,7 +309,7 @@
     }
 
     function showLoad(s, t) {
-        document.getElementById('loading-text').innerText = t;
+        document.getElementById('loading-text').innerText = t || 'Cargando...';
         document.getElementById('loading').style.display = s ? 'flex' : 'none';
     }
 
@@ -264,6 +317,11 @@
         document.getElementById('dni').value = "";
         document.getElementById('paciente').value = "";
         document.getElementById('notas').value = "";
+        document.querySelectorAll('.cat-btn').forEach((b, i) => {
+            if(i === 0) b.classList.add('active');
+            else b.classList.remove('active');
+        });
+        document.getElementById('categoria').value = "Fisioterapia Traumatológica";
     }
 
     function toggleAdmin() {
@@ -271,22 +329,32 @@
         p.style.display = p.style.display === 'none' ? 'block' : 'none';
     }
 
+    function cerrarSesion() {
+        if(confirm('¿Cerrar sesión?')) {
+            location.reload();
+        }
+    }
+
     function exportarPDF() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        const filtrados = db.pacientes.filter(x => String(x.dni) === selectedDni);
-        doc.text("+FISIO - HISTORIA CLÍNICA", 20, 20);
-        doc.text(`Paciente: ${filtrados[0].paciente} (DNI: ${selectedDni})`, 20, 30);
-        let y = 40;
-        filtrados.forEach(s => {
-            doc.setFontSize(10);
-            doc.text(`${s.fecha} - ${s.categoria}`, 20, y);
-            y += 7;
-            const lines = doc.splitTextToSize(s.notas, 170);
-            doc.text(lines, 20, y);
-            y += (lines.length * 6) + 10;
-        });
-        doc.save(`Ficha_${selectedDni}.pdf`);
+        if(!selectedDni) return alert("⚠️ Selecciona un paciente primero");
+        
+        showLoad(true, "Generando reporte...");
+        
+        google.script.run
+            .withSuccessHandler(function(url) {
+                showLoad(false);
+                if(url) {
+                    window.open(url, '_blank');
+                    alert('✅ PDF generado correctamente');
+                } else {
+                    alert('⚠️ Error al generar PDF');
+                }
+            })
+            .withFailureHandler(function(error) {
+                showLoad(false);
+                alert('Error: ' + error.message);
+            })
+            .generarPDF(selectedDni);
     }
 
     window.onload = init;
