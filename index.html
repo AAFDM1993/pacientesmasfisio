@@ -135,6 +135,19 @@
     <div id="main-app">
         <aside>
             <div class="panel">
+                <h3>📅 Calendario de Citas</h3>
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <button onclick="cambiarMes(-1)">◀</button>
+                        <div class="calendar-title" id="calendar-title"></div>
+                        <button onclick="cambiarMes(1)">▶</button>
+                    </div>
+                    <div class="calendar-grid" id="calendar-grid"></div>
+                </div>
+                <div class="appointments-list" id="appointments-list"></div>
+            </div>
+
+            <div class="panel">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                     <div style="display:flex; align-items:center; gap:10px;">
                         <img src="logo.png" alt="+FISIO Logo" style="width: 35px; height: auto;">
@@ -171,19 +184,6 @@
                 <button id="btnAdmin" class="btn-save" onclick="toggleAdmin()" style="display:none; margin-top:20px; background:var(--admin); width:100%;">⚙️ PANEL ADMIN</button>
             </div>
 
-            <div class="panel">
-                <h3>📅 Calendario de Citas</h3>
-                <div class="calendar-container">
-                    <div class="calendar-header">
-                        <button onclick="cambiarMes(-1)">◀</button>
-                        <div class="calendar-title" id="calendar-title"></div>
-                        <button onclick="cambiarMes(1)">▶</button>
-                    </div>
-                    <div class="calendar-grid" id="calendar-grid"></div>
-                </div>
-                <div class="appointments-list" id="appointments-list"></div>
-            </div>
-
             <div id="admin-panel" class="panel" style="display:none; border:2px solid var(--admin);">
                 <h3 style="color:var(--admin)">🔑 Nuevo Usuario</h3>
                 <input type="text" id="adm-nombre" placeholder="Nombre completo" style="margin-bottom:10px;">
@@ -211,7 +211,7 @@
 
 <script>
     const CONFIG = {
-        webAppUrl: 'https://script.google.com/macros/s/AKfycbw6N6EBJf72lwVAbY_exy8qjMh_pwMYv_t3A8GZ_wNYL4pN62_Wd937lrEdMK5ALPVy/exec'
+        webAppUrl: 'https://script.google.com/macros/s/AKfycbwqA9thP3IvRvQWFV91e5Kq5Qqa6XgoscZRFMSCJA_EUdI3ufInNDo1YpXAc0p_S8NE/exec'
     };
     
     let db = { pacientes: [], usuarios: [], citas: [] };
@@ -239,7 +239,14 @@
             const data = await response.json();
             if (data.error) throw new Error(data.error);
             
-            db.pacientes = data.pacientes || [];
+            // Procesar pacientes asegurando que DNI siempre sea String
+            db.pacientes = (data.pacientes || []).map(p => ({
+                ...p,
+                dni: String(p.dni || ''),
+                id: String(p.id || '')
+            }));
+            
+            // Procesar usuarios
             db.usuarios = data.usuarios || [];
             
             if (mostrarCarga) {
@@ -351,21 +358,22 @@
     }
 
     async function guardar() {
-        const dni = String(document.getElementById('dni').value).trim();
+        const dniInput = document.getElementById('dni').value.trim();
         const paciente = document.getElementById('paciente').value.trim();
         const notas = document.getElementById('notas').value.trim();
         
-        if(!dni || !notas || !paciente) {
+        if(!dniInput || !notas || !paciente) {
             alert("⚠️ Faltan datos: DNI, Nombre y Notas son obligatorios");
             return;
         }
 
         showLoad(true, "Guardando...");
         
+        // IMPORTANTE: Mantener DNI como String desde el inicio
         const nuevaSesion = {
             action: 'save',
             id: String(Date.now()),
-            dni: dni,
+            dni: dniInput, // Mantener como String tal cual
             paciente: paciente,
             categoria: document.getElementById('categoria').value,
             notas: notas,
@@ -387,7 +395,7 @@
                 db.pacientes = [...db.pacientes, nuevaSesion];
                 
                 // Actualizar historial inmediatamente
-                verHistorial(dni);
+                verHistorial(dniInput);
                 
                 // Limpiar notas
                 document.getElementById('notas').value = "";
@@ -511,7 +519,13 @@
     function renderLista(filtro = "") {
         const div = document.getElementById('listaPacientes');
         const unicos = {};
-        db.pacientes.forEach(p => unicos[String(p.dni)] = p.paciente);
+        // Asegurar que DNI siempre sea String
+        db.pacientes.forEach(p => {
+            const dniStr = String(p.dni || '');
+            if (dniStr) {
+                unicos[dniStr] = p.paciente;
+            }
+        });
         
         const keys = Object.keys(unicos).filter(d => 
             unicos[d].toLowerCase().includes(filtro.toLowerCase()) || d.includes(filtro)
@@ -537,8 +551,9 @@
     }
 
     function verHistorial(d) {
-        selectedDni = String(d);
-        const filtrados = db.pacientes.filter(x => String(x.dni) === selectedDni).reverse();
+        selectedDni = String(d || '');
+        // Filtrar asegurando comparación de strings
+        const filtrados = db.pacientes.filter(x => String(x.dni || '') === selectedDni).reverse();
         document.getElementById('btnPdf').style.display = filtrados.length ? 'inline-block' : 'none';
         document.getElementById('titulo-historial').innerText = "📋 Historial: " + (filtrados[0]?.paciente || "Sin paciente");
         
@@ -568,10 +583,11 @@
     }
 
     function autoBuscar(val) {
-        const p = db.pacientes.find(x => String(x.dni) === String(val).trim());
+        const valTrimmed = String(val || '').trim();
+        const p = db.pacientes.find(x => String(x.dni || '') === valTrimmed);
         if(p) { 
             document.getElementById('paciente').value = p.paciente; 
-            verHistorial(val); 
+            verHistorial(valTrimmed); 
         }
     }
 
@@ -624,7 +640,7 @@
             return;
         }
         
-        const filtrados = db.pacientes.filter(x => String(x.dni) === selectedDni);
+        const filtrados = db.pacientes.filter(x => String(x.dni || '') === selectedDni);
         if(filtrados.length === 0) {
             alert("⚠️ No hay sesiones para exportar");
             return;
