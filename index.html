@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>+FISIO | Gestión</title>
+    <title>+FISIO | Gestión de pacientes</title>
     <style>
         :root { 
             --primary: #2c3e50; --accent: #27ae60; --bg: #f0f2f5; 
@@ -179,20 +179,6 @@
                     <input type="text" id="dni" placeholder="DNI" oninput="autoBuscar(this.value)">
                     <input type="text" id="paciente" placeholder="Nombre completo">
                 </div>
-                
-                <div style="margin: 15px 0;">
-                    <label style="font-size: 0.9rem; color: var(--gray); margin-bottom: 5px; display: block;">Tipo de Atención:</label>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                        <button type="button" class="tipo-atencion-btn active" onclick="setTipoAtencion(this, 'evaluacion')" data-tipo="evaluacion" style="background: var(--accent); color: white; border: 2px solid var(--accent); padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.3s;">
-                            📋 Evaluación
-                        </button>
-                        <button type="button" class="tipo-atencion-btn" onclick="setTipoAtencion(this, 'sesion')" data-tipo="sesion" style="background: white; color: var(--blue); border: 2px solid var(--blue); padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.3s;">
-                            💪 Sesión
-                        </button>
-                    </div>
-                    <input type="hidden" id="tipo-atencion" value="evaluacion">
-                </div>
-                
                 <div class="cat-grid">
                     <div class="cat-btn active" onclick="setCat(this, 'Fisioterapia Traumatológica')">🦴 Trauma</div>
                     <div class="cat-btn" onclick="setCat(this, 'Fisioterapia Reumatológica')">💧 Reuma</div>
@@ -241,7 +227,7 @@
 
 <script>
     const CONFIG = {
-        webAppUrl: 'https://script.google.com/macros/s/AKfycbx6tCYobrN9pg-2wRmizOHKyU9xhbyOh3_7U4S_xXPJsjKegZ2SoF235KlmNwZ9WXM/exec'
+        webAppUrl: 'https://script.google.com/macros/s/AKfycbwqA9thP3IvRvQWFV91e5Kq5Qqa6XgoscZRFMSCJA_EUdI3ufInNDo1YpXAc0p_S8NE/exec'
     };
     
     let db = { pacientes: [], usuarios: [], citas: [] };
@@ -392,7 +378,6 @@
         const dniInput = document.getElementById('dni').value.trim();
         const paciente = document.getElementById('paciente').value.trim();
         const notas = document.getElementById('notas').value.trim();
-        const tipoAtencion = document.getElementById('tipo-atencion').value;
         
         if(!dniInput || !notas || !paciente) {
             alert("⚠️ Faltan datos: DNI, Nombre y Notas son obligatorios");
@@ -401,31 +386,15 @@
 
         showLoad(true, "Guardando...");
         
-        // Formatear fecha en formato legible: "16/02/2026 04:33 PM"
-        const ahora = new Date();
-        const dia = String(ahora.getDate()).padStart(2, '0');
-        const mes = String(ahora.getMonth() + 1).padStart(2, '0');
-        const anio = ahora.getFullYear();
-        
-        let horas = ahora.getHours();
-        const minutos = String(ahora.getMinutes()).padStart(2, '0');
-        const ampm = horas >= 12 ? 'PM' : 'AM';
-        horas = horas % 12;
-        horas = horas ? horas : 12; // 0 se convierte en 12
-        const horasStr = String(horas).padStart(2, '0');
-        
-        const fechaFormateada = `${dia}/${mes}/${anio} ${horasStr}:${minutos} ${ampm}`;
-        
         // IMPORTANTE: Mantener DNI como String desde el inicio
         const nuevaSesion = {
             action: 'save',
             id: String(Date.now()),
-            dni: dniInput,
+            dni: dniInput, // Mantener como String tal cual
             paciente: paciente,
             categoria: document.getElementById('categoria').value,
-            tipo_atencion: tipoAtencion, // Guardar tipo seleccionado manualmente
             notas: notas,
-            fecha: fechaFormateada,
+            fecha: new Date().toLocaleString('es-ES'),
             atendido_por: currentUser.nombre_completo
         };
         
@@ -448,47 +417,8 @@
                 // Limpiar notas
                 document.getElementById('notas').value = "";
                 
-                // Resetear a "Sesión" después de guardar
-                const btnSesion = document.querySelector('[data-tipo="sesion"]');
-                if (btnSesion) {
-                    setTipoAtencion(btnSesion, 'sesion');
-                }
-                
                 showLoad(false);
                 mostrarNotificacion('✅ Sesión guardada');
-                
-                // Recargar datos en segundo plano sin mostrar pantalla
-                setTimeout(() => cargarDatos(false), 500);
-            } else {
-                throw new Error(result.message || 'Error al guardar');
-            }
-        } catch (error) {
-            showLoad(false);
-            alert('❌ Error: ' + error.message);
-        }
-    }
-        
-        try {
-            const response = await fetch(CONFIG.webAppUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify(nuevaSesion)
-            });
-            
-            const result = await response.json();
-            
-            if (result.status === 'success') {
-                // Agregar a la base de datos local sin modificar la referencia
-                db.pacientes = [...db.pacientes, nuevaSesion];
-                
-                // Actualizar historial inmediatamente
-                verHistorial(dniInput);
-                
-                // Limpiar notas
-                document.getElementById('notas').value = "";
-                
-                showLoad(false);
-                mostrarNotificacion(`✅ ${tipoAtencion} guardada`);
                 
                 // Recargar datos en segundo plano sin mostrar pantalla
                 setTimeout(() => cargarDatos(false), 500);
@@ -649,24 +579,12 @@
             return;
         }
 
-        document.getElementById('historial-body').innerHTML = filtrados.map((s, idx) => {
-            // Usar el campo tipo_atencion guardado
-            const tipoAtencion = s.tipo_atencion || 'sesion';
-            const esEvaluacion = tipoAtencion === 'evaluacion';
-            
-            // Contar sesiones (solo las que NO son evaluación)
-            const sesionesHastaEsta = filtrados.slice(0, filtrados.length - idx + 1)
-                .filter(x => (x.tipo_atencion || 'sesion') === 'sesion').length;
-            
-            const etiqueta = esEvaluacion ? 'EVALUACIÓN FISIOTERAPÉUTICA' : `SESIÓN #${sesionesHastaEsta}`;
-            const colorEtiqueta = esEvaluacion ? 'var(--accent)' : 'var(--blue)';
-            
-            return `
+        document.getElementById('historial-body').innerHTML = filtrados.map((s, idx) => `
             <div class="sesion-card">
                 <button class="btn-delete" onclick="eliminarSesion('${s.id}')" title="Eliminar sesión">✕</button>
                 <div style="display:flex; justify-content:space-between; align-items:center; padding-right:30px;">
                     <small style="color: var(--primary);"><b>📅 ${s.fecha}</b></small>
-                    <span style="background: ${colorEtiqueta}; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">${etiqueta}</span>
+                    <span style="background: var(--blue); color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem;">#${filtrados.length - idx}</span>
                 </div>
                 <div style="color:var(--blue); font-size:0.85rem; margin:8px 0; font-weight:600;">
                     ${s.categoria}
@@ -674,11 +592,11 @@
                 <div style="color:var(--gray); font-size:0.8rem; margin-bottom:12px;">
                     👨‍⚕️ Atendió: ${s.atendido_por}
                 </div>
-                <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid ${colorEtiqueta};">
+                <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid var(--blue);">
                     <p style="margin:0; line-height:1.6; white-space: pre-wrap;">${s.notas}</p>
                 </div>
             </div>
-        `}).join('');
+        `).join('');
     }
 
     function autoBuscar(val) {
@@ -694,32 +612,6 @@
         document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
         el.classList.add('active');
         document.getElementById('categoria').value = v;
-    }
-    
-    function setTipoAtencion(el, tipo) {
-        // Remover active de todos
-        document.querySelectorAll('.tipo-atencion-btn').forEach(b => {
-            b.classList.remove('active');
-            if (b.dataset.tipo === 'evaluacion') {
-                b.style.background = 'white';
-                b.style.color = 'var(--accent)';
-            } else {
-                b.style.background = 'white';
-                b.style.color = 'var(--blue)';
-            }
-        });
-        
-        // Activar el seleccionado
-        el.classList.add('active');
-        if (tipo === 'evaluacion') {
-            el.style.background = 'var(--accent)';
-            el.style.color = 'white';
-        } else {
-            el.style.background = 'var(--blue)';
-            el.style.color = 'white';
-        }
-        
-        document.getElementById('tipo-atencion').value = tipo;
     }
 
     function limpiarCampos() {
@@ -774,36 +666,10 @@
         const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
         const logoUrl = baseUrl + 'logo.png';
         
-        // Formatear fecha actual
-        const ahora = new Date();
-        const dia = String(ahora.getDate()).padStart(2, '0');
-        const mes = String(ahora.getMonth() + 1).padStart(2, '0');
-        const anio = ahora.getFullYear();
-        let horas = ahora.getHours();
-        const minutos = String(ahora.getMinutes()).padStart(2, '0');
-        const ampm = horas >= 12 ? 'PM' : 'AM';
-        horas = horas % 12;
-        horas = horas ? horas : 12;
-        const horasStr = String(horas).padStart(2, '0');
-        const fechaGeneracion = `${dia}/${mes}/${anio} ${horasStr}:${minutos} ${ampm}`;
-        
-        let html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Historial - ${filtrados[0].paciente}</title><style>body{font-family:'Segoe UI',sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.6;color:#333}.header{text-align:center;border-bottom:3px solid #3498db;padding-bottom:20px;margin-bottom:30px}.logo{width:150px;height:auto;margin-bottom:15px}.info-paciente{background:#f8f9fa;padding:20px;border-radius:8px;margin-bottom:30px}.sesion{border:1px solid #e0e6ed;border-radius:10px;padding:20px;margin-bottom:25px;page-break-inside:avoid}.sesion-header{background:#3498db;color:white;padding:10px 15px;border-radius:6px;margin-bottom:15px;font-weight:bold}.sesion-header.evaluacion{background:#27ae60}.sesion-categoria{color:#3498db;font-weight:600;margin:10px 0}.sesion-notas{background:#f8f9fa;padding:15px;border-left:4px solid #3498db;border-radius:4px;white-space:pre-wrap}.sesion-notas.evaluacion{border-left-color:#27ae60}@media print{body{margin:0;padding:15px}.sesion{page-break-inside:avoid}}</style></head><body><div class="header"><img src="${logoUrl}" alt="Logo" class="logo" onerror="this.style.display='none'"><h2>HISTORIA CLÍNICA</h2></div><div class="info-paciente"><p><strong>Paciente:</strong> ${filtrados[0].paciente}</p><p><strong>DNI:</strong> ${selectedDni}</p><p><strong>Fecha de generación:</strong> ${fechaGeneracion}</p><p><strong>Total sesiones:</strong> ${filtrados.length}</p></div>`;
+        let html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Historial - ${filtrados[0].paciente}</title><style>body{font-family:'Segoe UI',sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.6;color:#333}.header{text-align:center;border-bottom:3px solid #3498db;padding-bottom:20px;margin-bottom:30px}.logo{width:250px;height:auto;margin-bottom:15px}.info-paciente{background:#f8f9fa;padding:20px;border-radius:8px;margin-bottom:30px}.sesion{border:1px solid #e0e6ed;border-radius:10px;padding:20px;margin-bottom:25px;page-break-inside:avoid}.sesion-header{background:#3498db;color:white;padding:10px 15px;border-radius:6px;margin-bottom:15px;font-weight:bold}.sesion-categoria{color:#3498db;font-weight:600;margin:10px 0}.sesion-notas{background:#f8f9fa;padding:15px;border-left:4px solid #3498db;border-radius:4px;white-space:pre-wrap}@media print{body{margin:0;padding:15px}.sesion{page-break-inside:avoid}}</style></head><body><div class="header"><img src="${logoUrl}" alt="Logo" class="logo" onerror="this.style.display='none'"><h2>HISTORIA CLÍNICA</h2></div><div class="info-paciente"><p><strong>Paciente:</strong> ${filtrados[0].paciente}</p><p><strong>DNI:</strong> ${selectedDni}</p><p><strong>Fecha:</strong> ${new Date().toLocaleString('es-ES')}</p><p><strong>Total sesiones:</strong> ${filtrados.length}</p></div>`;
         
         filtrados.forEach((s, i) => {
-            // Usar el campo tipo_atencion si existe, sino calcular
-            let tipoAtencion, claseExtra;
-            
-            if (s.tipo_atencion) {
-                tipoAtencion = s.tipo_atencion.toUpperCase();
-                claseExtra = tipoAtencion.includes('EVALUACIÓN') ? ' evaluacion' : '';
-            } else {
-                // Para registros antiguos
-                const esEvaluacion = i === filtrados.length - 1;
-                tipoAtencion = esEvaluacion ? 'EVALUACIÓN FISIOTERAPÉUTICA' : `SESIÓN ${filtrados.length - i - 1}`;
-                claseExtra = esEvaluacion ? ' evaluacion' : '';
-            }
-            
-            html += `<div class="sesion"><div class="sesion-header${claseExtra}">📅 ${tipoAtencion} - ${s.fecha}</div><div class="sesion-categoria">${s.categoria}</div><p style="color:#7f8c8d;font-size:14px">👨‍⚕️ ${s.atendido_por}</p><div class="sesion-notas${claseExtra}">${s.notas}</div></div>`;
+            html += `<div class="sesion"><div class="sesion-header">📅 SESIÓN ${i+1} - ${s.fecha}</div><div class="sesion-categoria">${s.categoria}</div><p style="color:#7f8c8d;font-size:14px">👨‍⚕️ ${s.atendido_por}</p><div class="sesion-notas">${s.notas}</div></div>`;
         });
         
         html += `<div style="margin-top:40px;text-align:center;color:#7f8c8d;font-size:12px;border-top:1px solid #e0e6ed;padding-top:20px"><p>© ${new Date().getFullYear()}</p></div></body></html>`;
