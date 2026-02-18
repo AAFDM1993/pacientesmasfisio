@@ -241,7 +241,8 @@
 
 <script>
     const CONFIG = {
-        webAppUrl: 'https://script.google.com/macros/s/AKfycbxPfCv17UfZzNudA6xAuoVZFMYbDtHyfnaWTbywEwUDqAEXQC3XG8d2LXBijxPjYop6/exec'
+        // ASEGÚRATE DE QUE ESTA URL SEA LA DE TU ÚLTIMO DESPLIEGUE
+        webAppUrl: 'TU_URL_DE_APPS_SCRIPT_AQUI' 
     };
     
     let db = { pacientes: [], usuarios: [], citas: [] };
@@ -257,17 +258,11 @@
 
     async function cargarDatos(mostrarCarga = true) {
         try {
-            if (mostrarCarga) {
-                showLoad(true, 'Cargando sistema...');
-            }
+            if (mostrarCarga) showLoad(true, 'Cargando sistema...');
             
             const url = `${CONFIG.webAppUrl}?action=loadData`;
             const response = await fetch(url);
-            
-            if (!response.ok) throw new Error('Error al conectar');
-            
             const data = await response.json();
-            if (data.error) throw new Error(data.error);
             
             // Procesar pacientes asegurando que DNI siempre sea String
             db.pacientes = (data.pacientes || []).map(p => ({
@@ -277,19 +272,26 @@
             }));
             
             // Procesar usuarios
+            db.pacientes = (data.pacientes || []).map(p => ({
+                ...p,
+                dni: String(p.dni || ''),
+                id: String(p.id || '')
+            }));
+            
             db.usuarios = data.usuarios || [];
             
+        } catch (error) {
+            console.error('❌ Error al cargar datos:', error);
+            // Si falla la carga, igual intentamos mostrar el login por si es error de datos vacíos
+        } finally {
             if (mostrarCarga) {
                 showLoad(false);
                 document.getElementById('login-screen').style.display = 'flex';
             }
-        } catch (error) {
-            if (mostrarCarga) showLoad(false);
-            alert('❌ Error al cargar datos: ' + error.message);
         }
     }
 
-    function login() {
+   function login() {
         const u = document.getElementById('userInput').value.trim();
         const p = document.getElementById('passInput').value.trim();
         
@@ -301,19 +303,16 @@
             document.getElementById('main-app').style.display = 'grid';
             document.getElementById('user-tag').innerText = "👤 " + currentUser.nombre_completo;
             
-            // Solo mostrar panel admin si es admin
             if(currentUser.rol === "admin") {
                 document.getElementById('btnAdmin').style.display = 'block';
             }
             
             renderLista();
             renderCalendar();
-            restaurarEstadoCalendar(); // Restaurar estado del calendario
+            restaurarEstadoCalendar();
         } else {
             document.getElementById('error-msg').style.display = 'block';
-            setTimeout(() => {
-                document.getElementById('error-msg').style.display = 'none';
-            }, 3000);
+            setTimeout(() => { document.getElementById('error-msg').style.display = 'none'; }, 3000);
         }
     }
 
@@ -1092,4 +1091,5 @@
 </style>
 </body>
 </html>
+
 
