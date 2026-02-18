@@ -179,6 +179,20 @@
                     <input type="text" id="dni" placeholder="DNI" oninput="autoBuscar(this.value)">
                     <input type="text" id="paciente" placeholder="Nombre completo">
                 </div>
+                
+                <div style="margin: 15px 0;">
+                    <label style="font-size: 0.9rem; color: var(--gray); margin-bottom: 5px; display: block;">Tipo de Atención:</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <button type="button" class="tipo-atencion-btn active" onclick="setTipoAtencion(this, 'evaluacion')" data-tipo="evaluacion" style="background: var(--accent); color: white; border: 2px solid var(--accent); padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.3s;">
+                            📋 Evaluación
+                        </button>
+                        <button type="button" class="tipo-atencion-btn" onclick="setTipoAtencion(this, 'sesion')" data-tipo="sesion" style="background: white; color: var(--blue); border: 2px solid var(--blue); padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.3s;">
+                            💪 Sesión
+                        </button>
+                    </div>
+                    <input type="hidden" id="tipo-atencion" value="evaluacion">
+                </div>
+                
                 <div class="cat-grid">
                     <div class="cat-btn active" onclick="setCat(this, 'Fisioterapia Traumatológica')">🦴 Trauma</div>
                     <div class="cat-btn" onclick="setCat(this, 'Fisioterapia Reumatológica')">💧 Reuma</div>
@@ -227,7 +241,7 @@
 
 <script>
     const CONFIG = {
-        webAppUrl: 'https://script.google.com/macros/s/AKfycbwqA9thP3IvRvQWFV91e5Kq5Qqa6XgoscZRFMSCJA_EUdI3ufInNDo1YpXAc0p_S8NE/exec'
+        webAppUrl: 'https://script.google.com/macros/s/AKfycbxPfCv17UfZzNudA6xAuoVZFMYbDtHyfnaWTbywEwUDqAEXQC3XG8d2LXBijxPjYop6/exec'
     };
     
     let db = { pacientes: [], usuarios: [], citas: [] };
@@ -378,6 +392,7 @@
         const dniInput = document.getElementById('dni').value.trim();
         const paciente = document.getElementById('paciente').value.trim();
         const notas = document.getElementById('notas').value.trim();
+        const tipoAtencion = document.getElementById('tipo-atencion').value;
         
         if(!dniInput || !notas || !paciente) {
             alert("⚠️ Faltan datos: DNI, Nombre y Notas son obligatorios");
@@ -385,17 +400,6 @@
         }
 
         showLoad(true, "Guardando...");
-        
-        // Verificar si es la primera atención (Evaluación) o sesión
-        const sesionesAnteriores = db.pacientes.filter(p => String(p.dni || '') === dniInput);
-        const numeroSesion = sesionesAnteriores.length; // 0 = evaluación, 1+ = sesión
-        
-        let tipoAtencion;
-        if (numeroSesion === 0) {
-            tipoAtencion = "Evaluación Fisioterapéutica";
-        } else {
-            tipoAtencion = `Sesión ${numeroSesion}`;
-        }
         
         // Formatear fecha en formato legible: "16/02/2026 04:33 PM"
         const ahora = new Date();
@@ -416,14 +420,53 @@
         const nuevaSesion = {
             action: 'save',
             id: String(Date.now()),
-            dni: dniInput, // Mantener como String tal cual
+            dni: dniInput,
             paciente: paciente,
             categoria: document.getElementById('categoria').value,
-            tipo_atencion: tipoAtencion, // NUEVO CAMPO
+            tipo_atencion: tipoAtencion, // Guardar tipo seleccionado manualmente
             notas: notas,
             fecha: fechaFormateada,
             atendido_por: currentUser.nombre_completo
         };
+        
+        try {
+            const response = await fetch(CONFIG.webAppUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify(nuevaSesion)
+            });
+            
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+                // Agregar a la base de datos local sin modificar la referencia
+                db.pacientes = [...db.pacientes, nuevaSesion];
+                
+                // Actualizar historial inmediatamente
+                verHistorial(dniInput);
+                
+                // Limpiar notas
+                document.getElementById('notas').value = "";
+                
+                // Resetear a "Sesión" después de guardar
+                const btnSesion = document.querySelector('[data-tipo="sesion"]');
+                if (btnSesion) {
+                    setTipoAtencion(btnSesion, 'sesion');
+                }
+                
+                showLoad(false);
+                mostrarNotificacion('✅ Sesión guardada');
+                
+                // Recargar datos en segundo plano sin mostrar pantalla
+                setTimeout(() => cargarDatos(false), 500);
+            } else {
+                throw new Error(result.message || 'Error al guardar');
+            }
+        } catch (error) {
+            showLoad(false);
+            alert('❌ Error: ' + error.message);
+        }
+    }
         
         try {
             const response = await fetch(CONFIG.webAppUrl, {
@@ -607,35 +650,23 @@
         }
 
         document.getElementById('historial-body').innerHTML = filtrados.map((s, idx) => {
-            // Usar el campo tipo_atencion si existe, sino calcular
-            let tipoAtencion, colorEtiqueta, icono;
+            // Usar el campo tipo_atencion guardado
+            const tipoAtencion = s.tipo_atencion || 'sesion';
+            const esEvaluacion = tipoAtencion === 'evaluacion';
             
-            if (s.tipo_atencion) {
-                // Usar el tipo guardado
-                tipoAtencion = s.tipo_atencion.toUpperCase();
-                if (tipoAtencion.includes('EVALUACIÓN')) {
-                    colorEtiqueta = 'var(--accent)';
-                    icono = '📋';
-                } else {
-                    colorEtiqueta = 'var(--blue)';
-                    icono = '📝';
-                }
-            } else {
-                // Calcular para registros antiguos
-                const totalSesiones = filtrados.length;
-                const numeroActual = totalSesiones - idx;
-                const esEvaluacion = numeroActual === totalSesiones;
-                tipoAtencion = esEvaluacion ? 'EVALUACIÓN FISIOTERAPÉUTICA' : `SESIÓN ${numeroActual - 1}`;
-                colorEtiqueta = esEvaluacion ? 'var(--accent)' : 'var(--blue)';
-                icono = esEvaluacion ? '📋' : '📝';
-            }
+            // Contar sesiones (solo las que NO son evaluación)
+            const sesionesHastaEsta = filtrados.slice(0, filtrados.length - idx + 1)
+                .filter(x => (x.tipo_atencion || 'sesion') === 'sesion').length;
+            
+            const etiqueta = esEvaluacion ? 'EVALUACIÓN FISIOTERAPÉUTICA' : `SESIÓN #${sesionesHastaEsta}`;
+            const colorEtiqueta = esEvaluacion ? 'var(--accent)' : 'var(--blue)';
             
             return `
             <div class="sesion-card">
                 <button class="btn-delete" onclick="eliminarSesion('${s.id}')" title="Eliminar sesión">✕</button>
                 <div style="display:flex; justify-content:space-between; align-items:center; padding-right:30px;">
                     <small style="color: var(--primary);"><b>📅 ${s.fecha}</b></small>
-                    <span style="background: ${colorEtiqueta}; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem;">${icono} ${tipoAtencion}</span>
+                    <span style="background: ${colorEtiqueta}; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">${etiqueta}</span>
                 </div>
                 <div style="color:var(--blue); font-size:0.85rem; margin:8px 0; font-weight:600;">
                     ${s.categoria}
@@ -663,6 +694,32 @@
         document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
         el.classList.add('active');
         document.getElementById('categoria').value = v;
+    }
+    
+    function setTipoAtencion(el, tipo) {
+        // Remover active de todos
+        document.querySelectorAll('.tipo-atencion-btn').forEach(b => {
+            b.classList.remove('active');
+            if (b.dataset.tipo === 'evaluacion') {
+                b.style.background = 'white';
+                b.style.color = 'var(--accent)';
+            } else {
+                b.style.background = 'white';
+                b.style.color = 'var(--blue)';
+            }
+        });
+        
+        // Activar el seleccionado
+        el.classList.add('active');
+        if (tipo === 'evaluacion') {
+            el.style.background = 'var(--accent)';
+            el.style.color = 'white';
+        } else {
+            el.style.background = 'var(--blue)';
+            el.style.color = 'white';
+        }
+        
+        document.getElementById('tipo-atencion').value = tipo;
     }
 
     function limpiarCampos() {
@@ -730,7 +787,7 @@
         const horasStr = String(horas).padStart(2, '0');
         const fechaGeneracion = `${dia}/${mes}/${anio} ${horasStr}:${minutos} ${ampm}`;
         
-        let html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Historial - ${filtrados[0].paciente}</title><style>body{font-family:'Segoe UI',sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.6;color:#333}.header{text-align:center;border-bottom:3px solid #3498db;padding-bottom:20px;margin-bottom:30px}.logo{width:250px;height:auto;margin-bottom:15px}.info-paciente{background:#f8f9fa;padding:20px;border-radius:8px;margin-bottom:30px}.sesion{border:1px solid #e0e6ed;border-radius:10px;padding:20px;margin-bottom:25px;page-break-inside:avoid}.sesion-header{background:#3498db;color:white;padding:10px 15px;border-radius:6px;margin-bottom:15px;font-weight:bold}.sesion-header.evaluacion{background:#27ae60}.sesion-categoria{color:#3498db;font-weight:600;margin:10px 0}.sesion-notas{background:#f8f9fa;padding:15px;border-left:4px solid #3498db;border-radius:4px;white-space:pre-wrap}.sesion-notas.evaluacion{border-left-color:#27ae60}@media print{body{margin:0;padding:15px}.sesion{page-break-inside:avoid}}</style></head><body><div class="header"><img src="${logoUrl}" alt="Logo" class="logo" onerror="this.style.display='none'"><h2>HISTORIA CLÍNICA</h2></div><div class="info-paciente"><p><strong>Paciente:</strong> ${filtrados[0].paciente}</p><p><strong>DNI:</strong> ${selectedDni}</p><p><strong>Fecha de generación:</strong> ${fechaGeneracion}</p><p><strong>Total sesiones:</strong> ${filtrados.length}</p></div>`;
+        let html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Historial - ${filtrados[0].paciente}</title><style>body{font-family:'Segoe UI',sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.6;color:#333}.header{text-align:center;border-bottom:3px solid #3498db;padding-bottom:20px;margin-bottom:30px}.logo{width:300px;height:auto;margin-bottom:15px}.info-paciente{background:#f8f9fa;padding:20px;border-radius:8px;margin-bottom:30px}.sesion{border:1px solid #e0e6ed;border-radius:10px;padding:20px;margin-bottom:25px;page-break-inside:avoid}.sesion-header{background:#3498db;color:white;padding:10px 15px;border-radius:6px;margin-bottom:15px;font-weight:bold}.sesion-header.evaluacion{background:#27ae60}.sesion-categoria{color:#3498db;font-weight:600;margin:10px 0}.sesion-notas{background:#f8f9fa;padding:15px;border-left:4px solid #3498db;border-radius:4px;white-space:pre-wrap}.sesion-notas.evaluacion{border-left-color:#27ae60}@media print{body{margin:0;padding:15px}.sesion{page-break-inside:avoid}}</style></head><body><div class="header"><img src="${logoUrl}" alt="Logo" class="logo" onerror="this.style.display='none'"><h2>HISTORIA CLÍNICA</h2></div><div class="info-paciente"><p><strong>Paciente:</strong> ${filtrados[0].paciente}</p><p><strong>DNI:</strong> ${selectedDni}</p><p><strong>Fecha de generación:</strong> ${fechaGeneracion}</p><p><strong>Total sesiones:</strong> ${filtrados.length}</p></div>`;
         
         filtrados.forEach((s, i) => {
             // Usar el campo tipo_atencion si existe, sino calcular
@@ -1035,4 +1092,3 @@
 </style>
 </body>
 </html>
-
