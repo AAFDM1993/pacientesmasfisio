@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Test Login</title></head>
+<body style="font-family:Arial; padding:50px; text-align:center;">
+    <h1>+FISIO Test</h1>
+    <input id="user" placeholder="Usuario" style="padding:10px; margin:10px;">
+    <input id="pass" type="password" placeholder="Password" style="padding:10px; margin:10px;">
+    <button onclick="test()" style="padding:10px 30px; background:#3498db; color:white; border:none; cursor:pointer;">TEST</button>
+    <div id="result" style="margin-top:20px; padding:20px; background:#f0f0f0;"></div>
+    
+    <script>
+    async function test() {
+        const result = document.getElementById('result');
+        result.innerHTML = 'Probando...';
+        
+        try {
+            const url = 'https://script.google.com/macros/s/AKfycbxblMPoo64BJVXfatifF8Vc4jOa6JVa2niiYEpCM4JdL594ZNfAqvVp-r-oyyrWGvVO/exec';
+            const res = await fetch(url);
+            const data = await res.json();
+            
+            result.innerHTML = `
+                ✅ Backend conectado!<br>
+                Usuarios: ${data.usuarios.length}<br>
+                Pacientes: ${data.pacientes.length}<br>
+                Citas: ${data.citas ? data.citas.length : 0}
+            `;
+        } catch(e) {
+            result.innerHTML = '❌ Error: ' + e.message;
+        }
+    }
+    console.log('✅ JavaScript OK');
+    </script>
+</body>
+</html>
