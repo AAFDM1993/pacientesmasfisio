@@ -106,8 +106,8 @@
             <img src="logo.png" alt="+FISIO Logo" style="width: 300px; height: auto; margin-bottom: 20px; display: block; margin-left: auto; margin-right: auto;">
             <h1 style="color:var(--blue); margin:0 0 10px 0;"> </h1>
             <p style="color:var(--gray); margin-bottom: 20px;">Sistema de Gestión de Pacientes</p>
-            <input type="text" id="userInput" placeholder="Usuario" style="margin-bottom:10px;">
-            <input type="password" id="passInput" placeholder="Contraseña" style="margin-bottom:10px;">
+            <input type="text" id="userInput" placeholder="Usuario" style="margin-bottom:10px;" onkeypress="if(event.key==='Enter') login()">
+            <input type="password" id="passInput" placeholder="Contraseña" style="margin-bottom:10px;" onkeypress="if(event.key==='Enter') login()">
             <button class="btn-save" onclick="login()" style="width:100%; margin-top:10px;">INGRESAR</button>
             <p id="error-msg" style="color:var(--danger); display:none; margin-top:15px;">⚠️ Credenciales incorrectas</p>
         </div>
@@ -293,10 +293,11 @@
     }
 
     function login() {
-        const u = document.getElementById('userInput').value.trim();
+        const u = document.getElementById('userInput').value.trim().toLowerCase(); // Convertir a minúsculas
         const p = document.getElementById('passInput').value.trim();
         
-        const user = db.usuarios.find(x => x.usuario === u && x.password === p);
+        // Buscar usuario sin importar mayúsculas/minúsculas
+        const user = db.usuarios.find(x => x.usuario.toLowerCase() === u && x.password === p);
 
         if(user || (u === "admin" && p === "1234")) {
             currentUser = user || { nombre_completo: "Admin Maestro", rol: "admin", usuario: "admin" };
@@ -451,10 +452,25 @@
                 // Limpiar notas
                 document.getElementById('notas').value = "";
                 
-                // Resetear a "Sesión" después de guardar
+                // Determinar qué tipo de atención seleccionar para la próxima
+                // Contar cuántas atenciones tiene este paciente ahora
+                const totalAtenciones = db.pacientes.filter(p => String(p.dni || '') === dniInput).length;
+                
+                // Si solo tiene 1 atención (la que acabamos de guardar), la próxima debería ser Sesión
+                // Si tiene más de 1, también debería ser Sesión por defecto
                 const btnSesion = document.querySelector('[data-tipo="sesion"]');
-                if (btnSesion) {
-                    setTipoAtencion(btnSesion, 'sesion');
+                const btnEvaluacion = document.querySelector('[data-tipo="evaluacion"]');
+                
+                if (totalAtenciones >= 1) {
+                    // Ya tiene evaluación, siguiente es sesión
+                    if (btnSesion) {
+                        setTipoAtencion(btnSesion, 'sesion');
+                    }
+                } else {
+                    // Primer paciente, mantener en evaluación
+                    if (btnEvaluacion) {
+                        setTipoAtencion(btnEvaluacion, 'evaluacion');
+                    }
                 }
                 
                 showLoad(false);
@@ -734,6 +750,12 @@
             else b.classList.remove('active');
         });
         document.getElementById('categoria').value = "Fisioterapia Traumatológica";
+        
+        // Resetear a Evaluación al limpiar
+        const btnEvaluacion = document.querySelector('[data-tipo="evaluacion"]');
+        if (btnEvaluacion) {
+            setTipoAtencion(btnEvaluacion, 'evaluacion');
+        }
     }
 
     function toggleAdmin() {
