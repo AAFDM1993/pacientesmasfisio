@@ -624,8 +624,15 @@
 
     function verHistorial(d) {
         selectedDni = String(d || '');
-        // Filtrar asegurando comparación de strings
-        const filtrados = db.pacientes.filter(x => String(x.dni || '') === selectedDni).reverse();
+        // Filtrar y ordenar cronológicamente (más antigua primero)
+        const todosPaciente = db.pacientes.filter(x => String(x.dni || '') === selectedDni);
+        
+        // Ordenar por ID (timestamp) para tener orden cronológico correcto
+        todosPaciente.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+        
+        // Ahora invertir para mostrar más reciente primero
+        const filtrados = [...todosPaciente].reverse();
+        
         document.getElementById('btnPdf').style.display = filtrados.length ? 'inline-block' : 'none';
         document.getElementById('titulo-historial').innerText = "📋 Historial: " + (filtrados[0]?.paciente || "Sin paciente");
         
@@ -639,11 +646,15 @@
             const tipoAtencion = s.tipo_atencion || 'sesion';
             const esEvaluacion = tipoAtencion === 'evaluacion';
             
-            // Contar sesiones (solo las que NO son evaluación)
-            const sesionesHastaEsta = filtrados.slice(0, filtrados.length - idx + 1)
+            // Contar sesiones en orden cronológico (desde todosPaciente, no desde filtrados)
+            // Encontrar el índice de esta sesión en el orden cronológico
+            const indiceEnOrdenCronologico = todosPaciente.findIndex(x => x.id === s.id);
+            
+            // Contar solo las sesiones (no evaluaciones) hasta este punto en orden cronológico
+            const sesionesAnteriores = todosPaciente.slice(0, indiceEnOrdenCronologico + 1)
                 .filter(x => (x.tipo_atencion || 'sesion') === 'sesion').length;
             
-            const etiqueta = esEvaluacion ? 'EVALUACIÓN FISIOTERAPÉUTICA' : `SESIÓN #${sesionesHastaEsta}`;
+            const etiqueta = esEvaluacion ? 'EVALUACIÓN FISIOTERAPÉUTICA' : `SESIÓN #${sesionesAnteriores}`;
             const colorEtiqueta = esEvaluacion ? 'var(--accent)' : 'var(--blue)';
             
             return `
@@ -762,6 +773,9 @@
             return;
         }
         
+        // Ordenar cronológicamente (más antigua primero)
+        filtrados.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+        
         const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
         const logoUrl = baseUrl + 'logo.png';
         
@@ -778,23 +792,21 @@
         const horasStr = String(horas).padStart(2, '0');
         const fechaGeneracion = `${dia}/${mes}/${anio} ${horasStr}:${minutos} ${ampm}`;
         
-        let html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Historial - ${filtrados[0].paciente}</title><style>body{font-family:'Segoe UI',sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.6;color:#333}.header{text-align:center;border-bottom:3px solid #3498db;padding-bottom:20px;margin-bottom:30px}.logo{width:150px;height:auto;margin-bottom:15px}.info-paciente{background:#f8f9fa;padding:20px;border-radius:8px;margin-bottom:30px}.sesion{border:1px solid #e0e6ed;border-radius:10px;padding:20px;margin-bottom:25px;page-break-inside:avoid}.sesion-header{background:#3498db;color:white;padding:10px 15px;border-radius:6px;margin-bottom:15px;font-weight:bold}.sesion-header.evaluacion{background:#27ae60}.sesion-categoria{color:#3498db;font-weight:600;margin:10px 0}.sesion-notas{background:#f8f9fa;padding:15px;border-left:4px solid #3498db;border-radius:4px;white-space:pre-wrap}.sesion-notas.evaluacion{border-left-color:#27ae60}@media print{body{margin:0;padding:15px}.sesion{page-break-inside:avoid}}</style></head><body><div class="header"><img src="${logoUrl}" alt="Logo" class="logo" onerror="this.style.display='none'"><h2>HISTORIA CLÍNICA</h2></div><div class="info-paciente"><p><strong>Paciente:</strong> ${filtrados[0].paciente}</p><p><strong>DNI:</strong> ${selectedDni}</p><p><strong>Fecha de generación:</strong> ${fechaGeneracion}</p><p><strong>Total sesiones:</strong> ${filtrados.length}</p></div>`;
+        let html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Historial - ${filtrados[0].paciente}</title><style>body{font-family:'Segoe UI',sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.6;color:#333}.header{text-align:center;border-bottom:3px solid #3498db;padding-bottom:20px;margin-bottom:30px}.logo{width:300px;height:auto;margin-bottom:15px}.info-paciente{background:#f8f9fa;padding:20px;border-radius:8px;margin-bottom:30px}.sesion{border:1px solid #e0e6ed;border-radius:10px;padding:20px;margin-bottom:25px;page-break-inside:avoid}.sesion-header{background:#3498db;color:white;padding:10px 15px;border-radius:6px;margin-bottom:15px;font-weight:bold}.sesion-header.evaluacion{background:#27ae60}.sesion-categoria{color:#3498db;font-weight:600;margin:10px 0}.sesion-notas{background:#f8f9fa;padding:15px;border-left:4px solid #3498db;border-radius:4px;white-space:pre-wrap}.sesion-notas.evaluacion{border-left-color:#27ae60}@media print{body{margin:0;padding:15px}.sesion{page-break-inside:avoid}}</style></head><body><div class="header"><img src="${logoUrl}" alt="Logo" class="logo" onerror="this.style.display='none'"><h2>HISTORIA CLÍNICA</h2></div><div class="info-paciente"><p><strong>Paciente:</strong> ${filtrados[0].paciente}</p><p><strong>DNI:</strong> ${selectedDni}</p><p><strong>Fecha de generación:</strong> ${fechaGeneracion}</p><p><strong>Total sesiones:</strong> ${filtrados.length}</p></div>`;
         
         filtrados.forEach((s, i) => {
-            // Usar el campo tipo_atencion si existe, sino calcular
-            let tipoAtencion, claseExtra;
+            // Usar el campo tipo_atencion guardado
+            const tipoAtencion = s.tipo_atencion || 'sesion';
+            const esEvaluacion = tipoAtencion === 'evaluacion';
             
-            if (s.tipo_atencion) {
-                tipoAtencion = s.tipo_atencion.toUpperCase();
-                claseExtra = tipoAtencion.includes('EVALUACIÓN') ? ' evaluacion' : '';
-            } else {
-                // Para registros antiguos
-                const esEvaluacion = i === filtrados.length - 1;
-                tipoAtencion = esEvaluacion ? 'EVALUACIÓN FISIOTERAPÉUTICA' : `SESIÓN ${filtrados.length - i - 1}`;
-                claseExtra = esEvaluacion ? ' evaluacion' : '';
-            }
+            // Contar sesiones hasta este punto (en orden cronológico)
+            const sesionesAnteriores = filtrados.slice(0, i + 1)
+                .filter(x => (x.tipo_atencion || 'sesion') === 'sesion').length;
             
-            html += `<div class="sesion"><div class="sesion-header${claseExtra}">📅 ${tipoAtencion} - ${s.fecha}</div><div class="sesion-categoria">${s.categoria}</div><p style="color:#7f8c8d;font-size:14px">👨‍⚕️ ${s.atendido_por}</p><div class="sesion-notas${claseExtra}">${s.notas}</div></div>`;
+            const etiqueta = esEvaluacion ? 'EVALUACIÓN FISIOTERAPÉUTICA' : `SESIÓN #${sesionesAnteriores}`;
+            const claseExtra = esEvaluacion ? ' evaluacion' : '';
+            
+            html += `<div class="sesion"><div class="sesion-header${claseExtra}">📅 ${etiqueta} - ${s.fecha}</div><div class="sesion-categoria">${s.categoria}</div><p style="color:#7f8c8d;font-size:14px">👨‍⚕️ ${s.atendido_por}</p><div class="sesion-notas${claseExtra}">${s.notas}</div></div>`;
         });
         
         html += `<div style="margin-top:40px;text-align:center;color:#7f8c8d;font-size:12px;border-top:1px solid #e0e6ed;padding-top:20px"><p>© ${new Date().getFullYear()}</p></div></body></html>`;
