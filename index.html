@@ -251,7 +251,6 @@
     let selectedDate = null;
 
     function init() {
-        cargarCitas();
         cargarDatos();
     }
 
@@ -299,8 +298,8 @@
         // Buscar usuario sin importar mayúsculas/minúsculas
         const user = db.usuarios.find(x => x.usuario.toLowerCase() === u && x.password === p);
 
-        if(user || (u === "admin" && p === "1234")) {
-            currentUser = user || { nombre_completo: "Admin Maestro", rol: "admin", usuario: "admin" };
+        if(user) {
+            currentUser = user;
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'grid';
             document.getElementById('user-tag').innerText = "👤 " + currentUser.nombre_completo;
