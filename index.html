@@ -1353,6 +1353,13 @@
             return;
         }
         
+        // Solicitar nombre del paciente
+        const nombrePaciente = prompt('Nombre del paciente:', selectedDni ? db.pacientes.find(p => String(p.dni) === selectedDni)?.paciente || '' : '');
+        if (!nombrePaciente || !nombrePaciente.trim()) {
+            alert('⚠️ Debes ingresar el nombre del paciente');
+            return;
+        }
+        
         const titulo = document.getElementById('ejercicio-titulo-pdf').value.trim() || 'Plan de Ejercicios';
         
         const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
@@ -1362,7 +1369,7 @@
         const ahora = new Date();
         const dia = String(ahora.getDate()).padStart(2, '0');
         const mes = String(ahora.getMonth() + 1).padStart(2, '0');
-        const anio = String(ahora.getFullYear()).slice(-2); // Solo 2 dígitos
+        const anio = String(ahora.getFullYear()).slice(-2);
         const fechaGeneracion = `${dia}/${mes}/${anio}`;
         
         let html = `
@@ -1370,13 +1377,17 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>${titulo}</title>
+    <title>${titulo} - ${nombrePaciente}</title>
     <style>
+        @page {
+            margin: 1cm;
+        }
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 20px;
+            max-width: 100%;
+            margin: 0;
+            padding: 0;
             line-height: 1.6;
             color: #333;
         }
@@ -1387,7 +1398,7 @@
             margin-bottom: 30px;
         }
         .logo {
-            width: 150px;
+            width: 300px;
             height: auto;
             margin-bottom: 15px;
         }
@@ -1396,12 +1407,14 @@
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 30px;
-            text-align: center;
+        }
+        .info p {
+            margin: 5px 0;
         }
         .ejercicio {
             border: 2px solid #e0e6ed;
             border-radius: 10px;
-            padding: 25px;
+            padding: 20px;
             margin-bottom: 30px;
             page-break-inside: avoid;
             background: white;
@@ -1411,30 +1424,38 @@
             color: white;
             padding: 12px 20px;
             border-radius: 6px;
-            margin: -25px -25px 20px -25px;
+            margin: -20px -20px 20px -20px;
             font-weight: bold;
             font-size: 1.1rem;
         }
-        .ejercicio img {
-            max-width: 100%;
-            height: auto;
+        .ejercicio-content {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        .ejercicio-imagen {
+            flex-shrink: 0;
+            width: 5cm;
+            height: 5cm;
+            object-fit: cover;
             border-radius: 8px;
-            margin: 15px 0;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .ejercicio-texto {
+            flex-grow: 1;
         }
         .descripcion {
             background: #f8f9fa;
             padding: 15px;
             border-left: 4px solid #3498db;
             border-radius: 4px;
-            margin: 15px 0;
+            margin-bottom: 15px;
         }
         .indicaciones {
             background: #fff3cd;
             padding: 15px;
             border-left: 4px solid #ffc107;
             border-radius: 4px;
-            margin: 15px 0;
         }
         .indicaciones strong {
             color: #856404;
@@ -1450,7 +1471,6 @@
         @media print {
             body {
                 margin: 0;
-                padding: 15px;
             }
             .ejercicio {
                 page-break-inside: avoid;
@@ -1465,6 +1485,7 @@
     </div>
     
     <div class="info">
+        <p><strong>Paciente:</strong> ${nombrePaciente}</p>
         <p><strong>Fecha:</strong> ${fechaGeneracion}</p>
         <p><strong>Total de ejercicios:</strong> ${ejercicios.length}</p>
         ${currentUser ? `<p><strong>Profesional:</strong> ${currentUser.nombre_completo}</p>` : ''}
@@ -1478,21 +1499,25 @@
             💪 Ejercicio ${idx + 1}: ${e.nombre}
         </div>
         
-        ${e.imagen ? `<img src="${e.imagen}" alt="${e.nombre}">` : ''}
-        
-        ${e.descripcion ? `
-        <div class="descripcion">
-            <strong>📝 Descripción:</strong><br>
-            ${e.descripcion.replace(/\n/g, '<br>')}
+        <div class="ejercicio-content">
+            ${e.imagen ? `<img src="${e.imagen}" alt="${e.nombre}" class="ejercicio-imagen">` : ''}
+            
+            <div class="ejercicio-texto">
+                ${e.descripcion ? `
+                <div class="descripcion">
+                    <strong>📝 Descripción:</strong><br>
+                    ${e.descripcion.replace(/\n/g, '<br>')}
+                </div>
+                ` : ''}
+                
+                ${e.indicaciones ? `
+                <div class="indicaciones">
+                    <strong>📌 Indicaciones:</strong><br>
+                    ${e.indicaciones.replace(/\n/g, '<br>')}
+                </div>
+                ` : ''}
+            </div>
         </div>
-        ` : ''}
-        
-        ${e.indicaciones ? `
-        <div class="indicaciones">
-            <strong>📌 Indicaciones:</strong><br>
-            ${e.indicaciones.replace(/\n/g, '<br>')}
-        </div>
-        ` : ''}
     </div>
 `;
         });
@@ -1507,17 +1532,18 @@
 </html>
 `;
         
+        // Crear un Blob y descargar
         const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${titulo.replace(/ /g, '_')}_${fechaGeneracion.replace(/\//g, '-')}.html`;
+        a.download = `Ejercicios_${nombrePaciente.replace(/ /g, '_')}_${fechaGeneracion.replace(/\//g, '-')}.html`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
         
-        mostrarNotificacion('📥 PDF Descargado - Abre el HTML y presiona Ctrl+P para imprimir');
+        mostrarNotificacion('📥 HTML Descargado - Ábrelo y presiona Ctrl+P para imprimir/guardar como PDF');
     }
 
     window.onload = init;
