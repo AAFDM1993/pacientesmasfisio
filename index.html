@@ -310,6 +310,34 @@
     let currentDate = new Date();
     let selectedDate = null;
 
+    // Función para formatear fechas (tanto nuevas como antiguas)
+    function formatearFecha(fechaStr) {
+        // Si ya está en formato DD/MM/YYYY HH:MM AM/PM, retornar tal cual
+        if (fechaStr && fechaStr.includes('/') && (fechaStr.includes('AM') || fechaStr.includes('PM'))) {
+            return fechaStr;
+        }
+        
+        // Si es formato ISO (2026-02-17T00:16:33.000Z), convertir
+        try {
+            const fecha = new Date(fechaStr);
+            
+            const dia = String(fecha.getDate()).padStart(2, '0');
+            const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+            const anio = String(fecha.getFullYear()).slice(-2); // Solo 2 dígitos
+            
+            let horas = fecha.getHours();
+            const minutos = String(fecha.getMinutes()).padStart(2, '0');
+            const ampm = horas >= 12 ? 'PM' : 'AM';
+            horas = horas % 12;
+            horas = horas ? horas : 12;
+            const horasStr = String(horas).padStart(2, '0');
+            
+            return `${dia}/${mes}/${anio} ${horasStr}:${minutos} ${ampm}`;
+        } catch (e) {
+            return fechaStr; // Si falla, retornar original
+        }
+    }
+
     function init() {
         cargarDatos();
     }
@@ -464,11 +492,11 @@
 
         showLoad(true, "Guardando...");
         
-        // Formatear fecha en formato legible: "16/02/2026 04:33 PM"
+        // Formatear fecha en formato legible: "16/02/26 04:33 PM"
         const ahora = new Date();
         const dia = String(ahora.getDate()).padStart(2, '0');
         const mes = String(ahora.getMonth() + 1).padStart(2, '0');
-        const anio = ahora.getFullYear();
+        const anio = String(ahora.getFullYear()).slice(-2); // Solo últimos 2 dígitos
         
         let horas = ahora.getHours();
         const minutos = String(ahora.getMinutes()).padStart(2, '0');
@@ -737,7 +765,7 @@
             <div class="sesion-card">
                 <button class="btn-delete" onclick="eliminarSesion('${s.id}')" title="Eliminar sesión">✕</button>
                 <div style="display:flex; justify-content:space-between; align-items:center; padding-right:30px;">
-                    <small style="color: var(--primary);"><b>📅 ${s.fecha}</b></small>
+                    <small style="color: var(--primary);"><b>📅 ${formatearFecha(s.fecha)}</b></small>
                     <span style="background: ${colorEtiqueta}; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">${etiqueta}</span>
                 </div>
                 <div style="color:var(--blue); font-size:0.85rem; margin:8px 0; font-weight:600;">
@@ -859,7 +887,7 @@
         const ahora = new Date();
         const dia = String(ahora.getDate()).padStart(2, '0');
         const mes = String(ahora.getMonth() + 1).padStart(2, '0');
-        const anio = ahora.getFullYear();
+        const anio = String(ahora.getFullYear()).slice(-2); // Solo 2 dígitos
         let horas = ahora.getHours();
         const minutos = String(ahora.getMinutes()).padStart(2, '0');
         const ampm = horas >= 12 ? 'PM' : 'AM';
@@ -896,7 +924,7 @@
             const etiqueta = esEvaluacion ? 'EVALUACIÓN FISIOTERAPÉUTICA' : `SESIÓN #${sesionesAnteriores}`;
             const claseExtra = esEvaluacion ? ' evaluacion' : '';
             
-            html += `<div class="sesion"><div class="sesion-header${claseExtra}">📅 ${etiqueta} - ${s.fecha}</div><div class="sesion-categoria">${s.categoria}</div><p style="color:#7f8c8d;font-size:14px">👨‍⚕️ ${s.atendido_por}</p><div class="sesion-notas${claseExtra}">${s.notas}</div></div>`;
+            html += `<div class="sesion"><div class="sesion-header${claseExtra}">📅 ${etiqueta} - ${formatearFecha(s.fecha)}</div><div class="sesion-categoria">${s.categoria}</div><p style="color:#7f8c8d;font-size:14px">👨‍⚕️ ${s.atendido_por}</p><div class="sesion-notas${claseExtra}">${s.notas}</div></div>`;
         });
         
         html += `<div style="margin-top:40px;text-align:center;color:#7f8c8d;font-size:12px;border-top:1px solid #e0e6ed;padding-top:20px"><p>© ${new Date().getFullYear()}</p></div></body></html>`;
@@ -1334,7 +1362,7 @@
         const ahora = new Date();
         const dia = String(ahora.getDate()).padStart(2, '0');
         const mes = String(ahora.getMonth() + 1).padStart(2, '0');
-        const anio = ahora.getFullYear();
+        const anio = String(ahora.getFullYear()).slice(-2); // Solo 2 dígitos
         const fechaGeneracion = `${dia}/${mes}/${anio}`;
         
         let html = `
