@@ -642,8 +642,17 @@
         }
 
         document.getElementById('historial-body').innerHTML = filtrados.map((s, idx) => {
-            // Usar el campo tipo_atencion guardado
-            const tipoAtencion = s.tipo_atencion || 'sesion';
+            // Usar el campo tipo_atencion guardado, con fallback para datos antiguos
+            let tipoAtencion = s.tipo_atencion;
+            
+            // Si no tiene tipo_atencion (datos antiguos), asignar basándose en posición
+            if (!tipoAtencion) {
+                // Encontrar índice en orden cronológico
+                const indiceEnOrdenCronologico = todosPaciente.findIndex(x => x.id === s.id);
+                // La primera atención (índice 0) es evaluación, el resto son sesiones
+                tipoAtencion = indiceEnOrdenCronologico === 0 ? 'evaluacion' : 'sesion';
+            }
+            
             const esEvaluacion = tipoAtencion === 'evaluacion';
             
             // Contar sesiones en orden cronológico (desde todosPaciente, no desde filtrados)
@@ -652,7 +661,14 @@
             
             // Contar solo las sesiones (no evaluaciones) hasta este punto en orden cronológico
             const sesionesAnteriores = todosPaciente.slice(0, indiceEnOrdenCronologico + 1)
-                .filter(x => (x.tipo_atencion || 'sesion') === 'sesion').length;
+                .filter((x, i) => {
+                    // Si tiene tipo_atencion, usarlo
+                    if (x.tipo_atencion) {
+                        return x.tipo_atencion === 'sesion';
+                    }
+                    // Si no tiene (datos antiguos), la primera es evaluación, el resto sesiones
+                    return i !== 0;
+                }).length;
             
             const etiqueta = esEvaluacion ? 'EVALUACIÓN FISIOTERAPÉUTICA' : `SESIÓN #${sesionesAnteriores}`;
             const colorEtiqueta = esEvaluacion ? 'var(--accent)' : 'var(--blue)';
@@ -795,13 +811,27 @@
         let html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Historial - ${filtrados[0].paciente}</title><style>body{font-family:'Segoe UI',sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.6;color:#333}.header{text-align:center;border-bottom:3px solid #3498db;padding-bottom:20px;margin-bottom:30px}.logo{width:300px;height:auto;margin-bottom:15px}.info-paciente{background:#f8f9fa;padding:20px;border-radius:8px;margin-bottom:30px}.sesion{border:1px solid #e0e6ed;border-radius:10px;padding:20px;margin-bottom:25px;page-break-inside:avoid}.sesion-header{background:#3498db;color:white;padding:10px 15px;border-radius:6px;margin-bottom:15px;font-weight:bold}.sesion-header.evaluacion{background:#27ae60}.sesion-categoria{color:#3498db;font-weight:600;margin:10px 0}.sesion-notas{background:#f8f9fa;padding:15px;border-left:4px solid #3498db;border-radius:4px;white-space:pre-wrap}.sesion-notas.evaluacion{border-left-color:#27ae60}@media print{body{margin:0;padding:15px}.sesion{page-break-inside:avoid}}</style></head><body><div class="header"><img src="${logoUrl}" alt="Logo" class="logo" onerror="this.style.display='none'"><h2>HISTORIA CLÍNICA</h2></div><div class="info-paciente"><p><strong>Paciente:</strong> ${filtrados[0].paciente}</p><p><strong>DNI:</strong> ${selectedDni}</p><p><strong>Fecha de generación:</strong> ${fechaGeneracion}</p><p><strong>Total sesiones:</strong> ${filtrados.length}</p></div>`;
         
         filtrados.forEach((s, i) => {
-            // Usar el campo tipo_atencion guardado
-            const tipoAtencion = s.tipo_atencion || 'sesion';
+            // Usar el campo tipo_atencion guardado, con fallback para datos antiguos
+            let tipoAtencion = s.tipo_atencion;
+            
+            // Si no tiene tipo_atencion (datos antiguos), asignar basándose en posición
+            if (!tipoAtencion) {
+                // La primera atención (índice 0) es evaluación, el resto son sesiones
+                tipoAtencion = i === 0 ? 'evaluacion' : 'sesion';
+            }
+            
             const esEvaluacion = tipoAtencion === 'evaluacion';
             
             // Contar sesiones hasta este punto (en orden cronológico)
             const sesionesAnteriores = filtrados.slice(0, i + 1)
-                .filter(x => (x.tipo_atencion || 'sesion') === 'sesion').length;
+                .filter((x, idx) => {
+                    // Si tiene tipo_atencion, usarlo
+                    if (x.tipo_atencion) {
+                        return x.tipo_atencion === 'sesion';
+                    }
+                    // Si no tiene (datos antiguos), la primera es evaluación, el resto sesiones
+                    return idx !== 0;
+                }).length;
             
             const etiqueta = esEvaluacion ? 'EVALUACIÓN FISIOTERAPÉUTICA' : `SESIÓN #${sesionesAnteriores}`;
             const claseExtra = esEvaluacion ? ' evaluacion' : '';
