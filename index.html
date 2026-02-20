@@ -86,12 +86,28 @@
         .appointment-delete:hover { color: #c0392b; }
         
         /* Modal */
-        .modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow-y: auto; }
         .modal-content { background-color: white; margin: 10% auto; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
         .modal-header { margin-bottom: 20px; }
         .modal-header h2 { margin: 0; color: var(--primary); }
         .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
         .close:hover { color: #000; }
+        
+        /* Estilos para módulo de ejercicios */
+        #modalEjercicios .modal-content { max-width: 900px; margin: 2% auto; }
+        .ejercicio-form { background: #f8f9fa; padding: 20px; margin: 15px 0; border-radius: 8px; border: 2px dashed var(--blue); }
+        .ejercicio-item { background: white; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid var(--blue); position: relative; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .ejercicio-item img { max-width: 200px; height: auto; border-radius: 6px; margin: 10px 0; display: block; }
+        .ejercicio-item .btn-eliminar { position: absolute; top: 10px; right: 10px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        .ejercicio-item .btn-eliminar:hover { background: #c0392b; }
+        .ejercicio-preview { margin: 15px 0; padding: 20px; background: white; border: 1px solid #ddd; border-radius: 8px; max-height: 400px; overflow-y: auto; }
+        .btn-agregar-ejercicio { background: var(--accent); color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin: 10px 5px; }
+        .btn-agregar-ejercicio:hover { background: #229954; }
+        .btn-generar-pdf { background: var(--blue); color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin: 10px 5px; font-size: 16px; }
+        .btn-generar-pdf:hover { background: #2980b9; }
+        .input-imagen-label { display: block; margin: 10px 0; padding: 15px; border: 2px dashed var(--blue); border-radius: 6px; background: #f0f8ff; cursor: pointer; text-align: center; color: var(--blue); font-weight: 600; }
+        .input-imagen-label:hover { background: #e3f2fd; border-color: #2980b9; }
+        .ejercicio-numero { background: var(--blue); color: white; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; display: inline-block; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -140,6 +156,49 @@
             <input type="text" id="cita-paciente-nombre" placeholder="Nombre del paciente" style="margin-bottom:10px;">
             <textarea id="cita-notas" rows="3" placeholder="Notas de la cita (opcional)" style="margin-bottom:20px;"></textarea>
             <button class="btn-save" onclick="agendarCita()" style="width:100%;">AGENDAR CITA</button>
+        </div>
+    </div>
+
+    <!-- Modal Generar Ejercicios PDF -->
+    <div id="modalEjercicios" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close" onclick="cerrarModalEjercicios()">&times;</span>
+                <h2>💪 Generar PDF de Ejercicios</h2>
+            </div>
+            
+            <div style="padding: 20px;">
+                <input type="text" id="ejercicio-titulo-pdf" placeholder="Título del PDF (ej: Ejercicios para el hogar)" style="margin-bottom: 15px; font-size: 1.1rem; font-weight: 600;">
+                
+                <div class="ejercicio-form">
+                    <h3 style="color: var(--blue); margin-top: 0;">➕ Agregar Ejercicio</h3>
+                    <input type="text" id="ejercicio-nombre" placeholder="Nombre del ejercicio (ej: Estiramiento de cuádriceps)" style="margin-bottom:10px;">
+                    
+                    <label class="input-imagen-label" for="ejercicio-imagen">
+                        📷 Subir imagen del ejercicio (opcional)
+                        <input type="file" id="ejercicio-imagen" accept="image/*" style="display:none;" onchange="previsualizarImagen(this)">
+                    </label>
+                    <div id="preview-imagen" style="margin: 10px 0;"></div>
+                    
+                    <textarea id="ejercicio-descripcion" rows="3" placeholder="Descripción del ejercicio..." style="margin-bottom:10px;"></textarea>
+                    <textarea id="ejercicio-indicaciones" rows="2" placeholder="Indicaciones (ej: 3 series de 10 repeticiones, 2 veces al día)" style="margin-bottom:10px;"></textarea>
+                    
+                    <button class="btn-agregar-ejercicio" onclick="agregarEjercicio()">➕ Agregar Ejercicio</button>
+                </div>
+                
+                <h3 style="color: var(--primary); margin-top: 30px;">📋 Ejercicios Agregados:</h3>
+                <div id="lista-ejercicios" style="min-height: 100px;">
+                    <p style="text-align: center; color: #95a5a6; padding: 40px 20px;">
+                        No hay ejercicios agregados aún.<br>
+                        <small>Usa el formulario de arriba para agregar ejercicios</small>
+                    </p>
+                </div>
+                
+                <div style="margin-top: 30px; text-align: center; border-top: 2px solid #e0e6ed; padding-top: 20px;">
+                    <button class="btn-generar-pdf" onclick="generarPDFEjercicios()">📥 GENERAR PDF</button>
+                    <button class="btn-agregar-ejercicio" onclick="limpiarEjercicios()" style="background: #e74c3c;">🗑️ Limpiar Todo</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -212,6 +271,7 @@
                 <input type="text" placeholder="🔍 Buscar por nombre o DNI..." onkeyup="renderLista(this.value)">
                 <div id="listaPacientes" style="max-height: 250px; overflow-y: auto; margin-top:10px;"></div>
                 <button id="btnAdmin" class="btn-save" onclick="toggleAdmin()" style="display:none; margin-top:20px; background:var(--admin); width:100%;">⚙️ PANEL ADMIN</button>
+                <button class="btn-save" onclick="abrirModalEjercicios()" style="margin-top:10px; background:var(--accent); width:100%;">💪 GENERAR EJERCICIOS PDF</button>
             </div>
 
             <div id="admin-panel" class="panel" style="display:none; border:2px solid var(--admin);">
@@ -1157,6 +1217,279 @@
             showLoad(false);
             alert('❌ Error: ' + error.message);
         }
+    }
+
+    // ============================================
+    // MÓDULO DE EJERCICIOS PDF
+    // ============================================
+    
+    let ejercicios = [];
+    let imagenTemporal = null;
+    
+    function abrirModalEjercicios() {
+        document.getElementById('modalEjercicios').style.display = 'block';
+    }
+    
+    function cerrarModalEjercicios() {
+        document.getElementById('modalEjercicios').style.display = 'none';
+    }
+    
+    function previsualizarImagen(input) {
+        const preview = document.getElementById('preview-imagen');
+        
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                imagenTemporal = e.target.result;
+                preview.innerHTML = `<img src="${e.target.result}" style="max-width: 200px; border-radius: 6px; margin: 10px 0;">`;
+            };
+            
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+    
+    function agregarEjercicio() {
+        const nombre = document.getElementById('ejercicio-nombre').value.trim();
+        const descripcion = document.getElementById('ejercicio-descripcion').value.trim();
+        const indicaciones = document.getElementById('ejercicio-indicaciones').value.trim();
+        
+        if (!nombre) {
+            alert('⚠️ Ingresa al menos el nombre del ejercicio');
+            return;
+        }
+        
+        const ejercicio = {
+            id: Date.now(),
+            nombre: nombre,
+            imagen: imagenTemporal,
+            descripcion: descripcion,
+            indicaciones: indicaciones
+        };
+        
+        ejercicios.push(ejercicio);
+        
+        // Limpiar formulario
+        document.getElementById('ejercicio-nombre').value = '';
+        document.getElementById('ejercicio-descripcion').value = '';
+        document.getElementById('ejercicio-indicaciones').value = '';
+        document.getElementById('ejercicio-imagen').value = '';
+        document.getElementById('preview-imagen').innerHTML = '';
+        imagenTemporal = null;
+        
+        renderizarEjercicios();
+        mostrarNotificacion('✅ Ejercicio agregado');
+    }
+    
+    function eliminarEjercicio(id) {
+        ejercicios = ejercicios.filter(e => e.id !== id);
+        renderizarEjercicios();
+        mostrarNotificacion('🗑️ Ejercicio eliminado');
+    }
+    
+    function limpiarEjercicios() {
+        if (!confirm('¿Eliminar todos los ejercicios agregados?')) return;
+        ejercicios = [];
+        renderizarEjercicios();
+        mostrarNotificacion('🗑️ Lista limpiada');
+    }
+    
+    function renderizarEjercicios() {
+        const lista = document.getElementById('lista-ejercicios');
+        
+        if (ejercicios.length === 0) {
+            lista.innerHTML = `
+                <p style="text-align: center; color: #95a5a6; padding: 40px 20px;">
+                    No hay ejercicios agregados aún.<br>
+                    <small>Usa el formulario de arriba para agregar ejercicios</small>
+                </p>
+            `;
+            return;
+        }
+        
+        lista.innerHTML = ejercicios.map((e, idx) => `
+            <div class="ejercicio-item">
+                <button class="btn-eliminar" onclick="eliminarEjercicio(${e.id})" title="Eliminar">×</button>
+                <span class="ejercicio-numero">Ejercicio ${idx + 1}</span>
+                <h4 style="color: var(--blue); margin: 10px 0;">${e.nombre}</h4>
+                ${e.imagen ? `<img src="${e.imagen}" alt="${e.nombre}">` : ''}
+                ${e.descripcion ? `<p style="margin: 10px 0;"><strong>Descripción:</strong><br>${e.descripcion}</p>` : ''}
+                ${e.indicaciones ? `<p style="margin: 10px 0; padding: 10px; background: #fff3cd; border-left: 3px solid #ffc107; border-radius: 4px;"><strong>📌 Indicaciones:</strong><br>${e.indicaciones}</p>` : ''}
+            </div>
+        `).join('');
+    }
+    
+    function generarPDFEjercicios() {
+        if (ejercicios.length === 0) {
+            alert('⚠️ Agrega al menos un ejercicio antes de generar el PDF');
+            return;
+        }
+        
+        const titulo = document.getElementById('ejercicio-titulo-pdf').value.trim() || 'Plan de Ejercicios';
+        
+        const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+        const logoUrl = baseUrl + 'logo.png';
+        
+        // Formatear fecha actual
+        const ahora = new Date();
+        const dia = String(ahora.getDate()).padStart(2, '0');
+        const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+        const anio = ahora.getFullYear();
+        const fechaGeneracion = `${dia}/${mes}/${anio}`;
+        
+        let html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>${titulo}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #27ae60;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .logo {
+            width: 150px;
+            height: auto;
+            margin-bottom: 15px;
+        }
+        .info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .ejercicio {
+            border: 2px solid #e0e6ed;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            page-break-inside: avoid;
+            background: white;
+        }
+        .ejercicio-header {
+            background: #27ae60;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            margin: -25px -25px 20px -25px;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        .ejercicio img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin: 15px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .descripcion {
+            background: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #3498db;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        .indicaciones {
+            background: #fff3cd;
+            padding: 15px;
+            border-left: 4px solid #ffc107;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        .indicaciones strong {
+            color: #856404;
+        }
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 12px;
+            border-top: 1px solid #e0e6ed;
+            padding-top: 20px;
+        }
+        @media print {
+            body {
+                margin: 0;
+                padding: 15px;
+            }
+            .ejercicio {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="${logoUrl}" alt="Logo" class="logo" onerror="this.style.display='none'">
+        <h1>${titulo}</h1>
+    </div>
+    
+    <div class="info">
+        <p><strong>Fecha:</strong> ${fechaGeneracion}</p>
+        <p><strong>Total de ejercicios:</strong> ${ejercicios.length}</p>
+        ${currentUser ? `<p><strong>Profesional:</strong> ${currentUser.nombre_completo}</p>` : ''}
+    </div>
+`;
+        
+        ejercicios.forEach((e, idx) => {
+            html += `
+    <div class="ejercicio">
+        <div class="ejercicio-header">
+            💪 Ejercicio ${idx + 1}: ${e.nombre}
+        </div>
+        
+        ${e.imagen ? `<img src="${e.imagen}" alt="${e.nombre}">` : ''}
+        
+        ${e.descripcion ? `
+        <div class="descripcion">
+            <strong>📝 Descripción:</strong><br>
+            ${e.descripcion.replace(/\n/g, '<br>')}
+        </div>
+        ` : ''}
+        
+        ${e.indicaciones ? `
+        <div class="indicaciones">
+            <strong>📌 Indicaciones:</strong><br>
+            ${e.indicaciones.replace(/\n/g, '<br>')}
+        </div>
+        ` : ''}
+    </div>
+`;
+        });
+        
+        html += `
+    <div class="footer">
+        <p><strong>Importante:</strong> Realice estos ejercicios según las indicaciones. 
+        Ante cualquier dolor o molestia, suspenda y consulte a su profesional de la salud.</p>
+        <p>© ${new Date().getFullYear()}</p>
+    </div>
+</body>
+</html>
+`;
+        
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${titulo.replace(/ /g, '_')}_${fechaGeneracion.replace(/\//g, '-')}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        mostrarNotificacion('📥 PDF Descargado - Abre el HTML y presiona Ctrl+P para imprimir');
     }
 
     window.onload = init;
