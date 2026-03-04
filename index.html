@@ -277,6 +277,7 @@
             <div id="admin-panel" class="panel" style="display:none; border:2px solid var(--admin);">
                 <h3 style="color:var(--admin)">🔑 Nuevo Usuario</h3>
                 <input type="text" id="adm-nombre" placeholder="Nombre completo" style="margin-bottom:10px;">
+                <input type="text" id="adm-colegiatura" placeholder="Colegiatura CTMP (ej: CTMP 12345)" style="margin-bottom:10px;">
                 <select id="adm-rol" style="margin-bottom:10px;">
                     <option value="profesional">Profesional</option>
                     <option value="admin">Administrador</option>
@@ -301,7 +302,7 @@
 
 <script>
     const CONFIG = {
-        webAppUrl: 'https://script.google.com/macros/s/AKfycbyH-bCTA3eG4peMTZkX4zA4Lg36eAfhEp8sOZuAkO4dFop5cQejLsYFjNW6iavtu1dn/exec'
+        webAppUrl: 'https://script.google.com/macros/s/AKfycbwn3aGXD3c_eS7Y3k2g8y9lpsAwISbAsC7HcYEU2byFIq4FmXKam7lXwZKdpFRY-8Ar/exec'
     };
     
     let db = { pacientes: [], usuarios: [], citas: [] };
@@ -622,12 +623,13 @@
 
     async function crearUsuario() {
         const nombre = document.getElementById('adm-nombre').value.trim();
+        const colegiatura = document.getElementById('adm-colegiatura').value.trim();
         const usuario = document.getElementById('adm-user').value.trim();
         const password = document.getElementById('adm-pass').value.trim();
         const rol = document.getElementById('adm-rol').value;
 
         if(!nombre || !usuario || !password) {
-            alert("⚠️ Completa todos los campos");
+            alert("⚠️ Completa todos los campos obligatorios");
             return;
         }
         
@@ -641,6 +643,7 @@
         const payload = {
             action: 'add_user',
             nombre_completo: nombre,
+            colegiatura: colegiatura || '',
             usuario: usuario,
             password: password,
             rol: rol
@@ -658,6 +661,7 @@
             if (result.status === 'success') {
                 // Limpiar formulario
                 document.getElementById('adm-nombre').value = "";
+                document.getElementById('adm-colegiatura').value = "";
                 document.getElementById('adm-user').value = "";
                 document.getElementById('adm-pass').value = "";
                 
@@ -896,7 +900,9 @@
         const horasStr = String(horas).padStart(2, '0');
         const fechaGeneracion = `${dia}/${mes}/${anio} ${horasStr}:${minutos} ${ampm}`;
         
-        let html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Historial - ${filtrados[0].paciente}</title><style>body{font-family:'Segoe UI',sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.6;color:#333}.header{text-align:center;border-bottom:3px solid #3498db;padding-bottom:20px;margin-bottom:30px}.logo{width:250px;height:auto;margin-bottom:15px}.info-paciente{background:#f8f9fa;padding:20px;border-radius:8px;margin-bottom:30px}.sesion{border:1px solid #e0e6ed;border-radius:10px;padding:20px;margin-bottom:25px;page-break-inside:avoid}.sesion-header{background:#3498db;color:white;padding:10px 15px;border-radius:6px;margin-bottom:15px;font-weight:bold}.sesion-header.evaluacion{background:#27ae60}.sesion-categoria{color:#3498db;font-weight:600;margin:10px 0}.sesion-notas{background:#f8f9fa;padding:15px;border-left:4px solid #3498db;border-radius:4px;white-space:pre-wrap}.sesion-notas.evaluacion{border-left-color:#27ae60}@media print{body{margin:0;padding:15px}.sesion{page-break-inside:avoid}}</style></head><body><div class="header"><img src="${logoUrl}" alt="Logo" class="logo" onerror="this.style.display='none'"><h2>HISTORIA CLÍNICA</h2></div><div class="info-paciente"><p><strong>Paciente:</strong> ${filtrados[0].paciente}</p><p><strong>DNI:</strong> ${selectedDni}</p><p><strong>Fecha de generación:</strong> ${fechaGeneracion}</p><p><strong>Total sesiones:</strong> ${filtrados.length}</p></div>`;
+        const colegiaturaInfo = currentUser && currentUser.colegiatura ? `<p><strong>Profesional:</strong> ${currentUser.nombre_completo} - ${currentUser.colegiatura}</p>` : currentUser ? `<p><strong>Profesional:</strong> ${currentUser.nombre_completo}</p>` : '';
+        
+        let html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Historial - ${filtrados[0].paciente}</title><style>@page{margin:1cm}body{font-family:'Segoe UI',sans-serif;max-width:100%;margin:0;padding:0;line-height:1.6;color:#333}.header{text-align:center;border-bottom:3px solid #3498db;padding-bottom:20px;margin-bottom:30px}.logo{width:250px;height:auto;margin-bottom:15px}.info-paciente{background:#f8f9fa;padding:20px;border-radius:8px;margin-bottom:30px}.sesion{border:1px solid #e0e6ed;border-radius:10px;padding:20px;margin-bottom:25px;page-break-inside:avoid}.sesion-header{background:#3498db;color:white;padding:10px 15px;border-radius:6px;margin-bottom:15px;font-weight:bold}.sesion-header.evaluacion{background:#27ae60}.sesion-categoria{color:#3498db;font-weight:600;margin:10px 0}.sesion-notas{background:#f8f9fa;padding:15px;border-left:4px solid #3498db;border-radius:4px;white-space:pre-wrap}.sesion-notas.evaluacion{border-left-color:#27ae60}@media print{body{margin:0}.sesion{page-break-inside:avoid}}</style></head><body><div class="header"><img src="${logoUrl}" alt="Logo" class="logo" onerror="this.style.display='none'"><h2>HISTORIA CLÍNICA</h2></div><div class="info-paciente"><p><strong>Paciente:</strong> ${filtrados[0].paciente}</p><p><strong>DNI:</strong> ${selectedDni}</p><p><strong>Fecha de generación:</strong> ${fechaGeneracion}</p><p><strong>Total sesiones:</strong> ${filtrados.length}</p>${colegiaturaInfo}</div>`;
         
         filtrados.forEach((s, i) => {
             // Usar el campo tipo_atencion guardado, con fallback para datos antiguos
@@ -939,7 +945,7 @@
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
         
-        mostrarNotificacion('📥 Descargado - Abre el HTML y presiona Ctrl+P');
+        mostrarNotificacion('📥 HTML Descargado - Ábrelo y presiona Ctrl+P para imprimir/guardar como PDF');
     }
 
     function showLoad(mostrar, texto = 'Cargando...') {
@@ -1398,7 +1404,7 @@
             margin-bottom: 30px;
         }
         .logo {
-            width: 300px;
+            width: 250px;
             height: auto;
             margin-bottom: 15px;
         }
@@ -1488,7 +1494,7 @@
         <p><strong>Paciente:</strong> ${nombrePaciente}</p>
         <p><strong>Fecha:</strong> ${fechaGeneracion}</p>
         <p><strong>Total de ejercicios:</strong> ${ejercicios.length}</p>
-        ${currentUser ? `<p><strong>Profesional:</strong> ${currentUser.nombre_completo}</p>` : ''}
+        ${currentUser && currentUser.colegiatura ? `<p><strong>Profesional:</strong> ${currentUser.nombre_completo} - ${currentUser.colegiatura}</p>` : currentUser ? `<p><strong>Profesional:</strong> ${currentUser.nombre_completo}</p>` : ''}
     </div>
 `;
         
@@ -1554,4 +1560,3 @@
 </style>
 </body>
 </html>
-
