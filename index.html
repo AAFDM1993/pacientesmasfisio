@@ -294,6 +294,7 @@
                 <div>
                     <button id="btnSync" class="btn-pdf" onclick="sincronizar()" title="Sincronizar datos">🔄</button>
                     <button id="btnPdf" class="btn-pdf" style="display:none;" onclick="exportarPDF()">📥 EXPORTAR PDF</button>
+                    <button id="btnInforme" class="btn-pdf" style="display:none; background: var(--accent);" onclick="generarInformeFisioterapeutico()">📋 INFORME FISIOTERAPÉUTICO</button>
                 </div>
             </div>
             <div id="historial-body" style="margin-top:20px;"></div>
@@ -389,6 +390,7 @@
 
         if(user) {
             currentUser = user;
+            
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('main-app').style.display = 'grid';
             document.getElementById('user-tag').innerText = "👤 " + currentUser.nombre_completo;
@@ -726,6 +728,7 @@
         const filtrados = [...todosPaciente].reverse();
         
         document.getElementById('btnPdf').style.display = filtrados.length ? 'inline-block' : 'none';
+        document.getElementById('btnInforme').style.display = filtrados.length ? 'inline-block' : 'none';
         document.getElementById('titulo-historial').innerText = "📋 Historial: " + (filtrados[0]?.paciente || "Sin paciente");
         
         if(filtrados.length === 0) {
@@ -946,6 +949,131 @@
         window.URL.revokeObjectURL(url);
         
         mostrarNotificacion('📥 HTML Descargado - Ábrelo y presiona Ctrl+P para imprimir/guardar como PDF');
+    }
+
+    // ============================================
+    // GENERAR INFORME FISIOTERAPÉUTICO
+    // ============================================
+    
+    function generarInformeFisioterapeutico() {
+        if(!selectedDni) {
+            alert("⚠️ Selecciona un paciente primero");
+            return;
+        }
+        
+        const filtrados = db.pacientes.filter(x => String(x.dni || '') === selectedDni);
+        if(filtrados.length === 0) {
+            alert("⚠️ No hay sesiones para generar informe");
+            return;
+        }
+        
+        // Ordenar cronológicamente (más antigua primero)
+        filtrados.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+        
+        // Separar evaluación y sesiones
+        const evaluacion = filtrados.find(s => (s.tipo_atencion === 'evaluacion' || filtrados.indexOf(s) === 0));
+        const sesiones = filtrados.filter((s, idx) => {
+            if (s.tipo_atencion) {
+                return s.tipo_atencion === 'sesion';
+            }
+            return idx !== 0; // Si no tiene tipo_atencion, la primera es evaluación
+        });
+        
+        const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+        const logoUrl = baseUrl + 'logo.png';
+        
+        // Formatear fecha actual
+        const ahora = new Date();
+        const dia = String(ahora.getDate()).padStart(2, '0');
+        const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+        const anio = String(ahora.getFullYear()).slice(-2);
+        let horas = ahora.getHours();
+        const minutos = String(ahora.getMinutes()).padStart(2, '0');
+        const ampm = horas >= 12 ? 'PM' : 'AM';
+        horas = horas % 12;
+        horas = horas ? horas : 12;
+        const horasStr = String(horas).padStart(2, '0');
+        const fechaGeneracion = `${dia}/${mes}/${anio} ${horasStr}:${minutos} ${ampm}`;
+        
+        const colegiaturaInfo = currentUser && currentUser.colegiatura ? currentUser.colegiatura : '';
+        
+        let html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Informe Fisioterapéutico - ${filtrados[0].paciente}</title>
+    <style>
+        @page { margin: 1cm; }
+        body { font-family: 'Segoe UI', sans-serif; max-width: 100%; margin: 0; padding: 0; line-height: 1.6; color: #333; font-size: 11pt; }
+        .header { text-align: center; border-bottom: 3px solid #27ae60; padding-bottom: 20px; margin-bottom: 30px; }
+        .logo { width: 250px; height: auto; margin-bottom: 15px; }
+        .titulo-informe { color: #27ae60; font-size: 24pt; font-weight: bold; margin: 10px 0; }
+        .info-paciente { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px; border-left: 4px solid #27ae60; }
+        .info-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 10px; }
+        .info-item strong { color: #2c3e50; }
+        .seccion { margin-bottom: 30px; page-break-inside: avoid; }
+        .seccion-titulo { background: #27ae60; color: white; padding: 12px 20px; border-radius: 6px; font-weight: bold; font-size: 14pt; margin-bottom: 15px; }
+        .evaluacion-content { background: #fff; padding: 20px; border: 2px solid #e0e6ed; border-radius: 8px; }
+        .sesion { background: #f8f9fa; padding: 15px; margin-bottom: 15px; border-left: 4px solid #3498db; border-radius: 4px; page-break-inside: avoid; }
+        .sesion-header { font-weight: bold; color: #3498db; margin-bottom: 8px; font-size: 11pt; }
+        .sesion-meta { color: #7f8c8d; font-size: 9pt; margin-bottom: 10px; }
+        .sesion-contenido { color: #333; white-space: pre-wrap; line-height: 1.5; }
+        .resumen { background: #fff3cd; padding: 20px; border-left: 4px solid #ffc107; border-radius: 8px; margin-top: 30px; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #e0e6ed; text-align: center; color: #7f8c8d; font-size: 9pt; }
+        .firma { margin-top: 50px; text-align: center; }
+        .linea-firma { border-top: 2px solid #333; width: 300px; margin: 0 auto 10px; }
+        @media print { body { margin: 0; } .seccion { page-break-inside: avoid; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="${logoUrl}" alt="Logo" class="logo" onerror="this.style.display='none'">
+        <div class="titulo-informe">INFORME FISIOTERAPÉUTICO</div>
+    </div>
+    
+    <div class="info-paciente">
+        <div class="info-row">
+            <div class="info-item"><strong>Paciente:</strong> ${filtrados[0].paciente}</div>
+            <div class="info-item"><strong>DNI:</strong> ${selectedDni}</div>
+        </div>
+        <div class="info-row">
+            <div class="info-item"><strong>Fecha del informe:</strong> ${fechaGeneracion}</div>
+            <div class="info-item"><strong>Total de sesiones:</strong> ${sesiones.length}</div>
+        </div>
+        ${currentUser ? `<div class="info-row"><div class="info-item"><strong>Profesional:</strong> ${currentUser.nombre_completo}</div>${colegiaturaInfo ? `<div class="info-item"><strong>Colegiatura:</strong> ${colegiaturaInfo}</div>` : ''}</div>` : ''}
+    </div>`;
+        
+        // SECCIÓN DE EVALUACIÓN
+        if (evaluacion) {
+            html += `<div class="seccion"><div class="seccion-titulo">📋 EVALUACIÓN INICIAL FISIOTERAPÉUTICA</div><div class="evaluacion-content"><p><strong>Fecha:</strong> ${formatearFecha(evaluacion.fecha)}</p><p><strong>Categoría:</strong> ${evaluacion.categoria}</p><p><strong>Evaluado por:</strong> ${evaluacion.atendido_por}</p><hr style="margin: 15px 0; border: none; border-top: 1px solid #e0e6ed;"><div class="sesion-contenido">${evaluacion.notas}</div></div></div>`;
+        }
+        
+        // SECCIÓN DE SESIONES
+        if (sesiones.length > 0) {
+            html += `<div class="seccion"><div class="seccion-titulo">💪 EVOLUCIÓN Y TRATAMIENTO (${sesiones.length} ${sesiones.length === 1 ? 'sesión' : 'sesiones'})</div>`;
+            sesiones.forEach((s, idx) => {
+                html += `<div class="sesion"><div class="sesion-header">Sesión #${idx + 1} - ${formatearFecha(s.fecha)}</div><div class="sesion-meta">📌 ${s.categoria} | 👨‍⚕️ ${s.atendido_por}</div><div class="sesion-contenido">${s.notas}</div></div>`;
+            });
+            html += `</div>`;
+        }
+        
+        // RESUMEN
+        html += `<div class="resumen"><h3 style="margin-top: 0; color: #856404;">📊 RESUMEN DEL TRATAMIENTO</h3><p><strong>Periodo de atención:</strong> ${formatearFecha(filtrados[0].fecha)} - ${formatearFecha(filtrados[filtrados.length - 1].fecha)}</p><p><strong>Total de sesiones realizadas:</strong> ${sesiones.length}</p><p><strong>Categorías de atención:</strong> ${[...new Set(filtrados.map(s => s.categoria))].join(', ')}</p></div>`;
+        
+        // FIRMA Y FOOTER
+        html += `<div class="firma"><div class="linea-firma"></div><p style="margin: 5px 0; font-weight: bold;">${currentUser ? currentUser.nombre_completo : ''}</p>${colegiaturaInfo ? `<p style="margin: 5px 0;">${colegiaturaInfo}</p>` : ''}<p style="margin: 5px 0; color: #7f8c8d;">Fisioterapeuta</p></div><div class="footer"><p>Este informe es un documento profesional de carácter confidencial.</p><p>© ${new Date().getFullYear()}</p></div></body></html>`;
+        
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Informe_Fisioterapeutico_${filtrados[0].paciente.replace(/ /g, '_')}_${selectedDni}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        mostrarNotificacion('📋 Informe generado - Ábrelo y presiona Ctrl+P para imprimir/guardar como PDF');
     }
 
     function showLoad(mostrar, texto = 'Cargando...') {
@@ -1446,6 +1574,7 @@
             object-fit: contain;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            background: #f8f9fa;
         }
         .ejercicio-texto {
             flex-grow: 1;
@@ -1560,4 +1689,3 @@
 </style>
 </body>
 </html>
-
