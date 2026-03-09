@@ -259,7 +259,15 @@
                     <div class="cat-btn" onclick="setCat(this, 'Neuro Adultos')">🧠 Neuro Adulto</div>
                 </div>
                 <input type="hidden" id="categoria" value="Fisioterapia Traumatológica">
-                <textarea id="notas" rows="6" placeholder="Detalles de la evolución..."></textarea>
+                <div style="margin-bottom: 10px;">
+                    <button type="button" onclick="abrirModalNotas()" style="width: 100%; padding: 15px; background: var(--blue); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: 600;">
+                        📝 ABRIR EDITOR DE NOTAS
+                    </button>
+                    <div id="preview-notas" style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 6px; min-height: 60px; color: #666; font-size: 0.9rem; max-height: 120px; overflow-y: auto;">
+                        <em>Haz clic en "ABRIR EDITOR DE NOTAS" para escribir...</em>
+                    </div>
+                </div>
+                <textarea id="notas" rows="6" placeholder="Detalles de la evolución..." style="display: none;"></textarea>
                 <div class="btn-group">
                     <button class="btn-save" onclick="guardar()">GUARDAR</button>
                     <button class="btn-clear" onclick="limpiarCampos()">LIMPIAR</button>
@@ -273,6 +281,39 @@
                 <button id="btnAdmin" class="btn-save" onclick="toggleAdmin()" style="display:none; margin-top:20px; background:var(--admin); width:100%;">⚙️ PANEL ADMIN</button>
                 <button class="btn-save" onclick="abrirModalEjercicios()" style="margin-top:10px; background:var(--accent); width:100%;">💪 GENERAR EJERCICIOS PDF</button>
             </div>
+        </aside>
+
+        <main class="panel">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 10px;">
+                <h2 id="titulo-historial" style="margin:0;">📋 Ficha Clínica</h2>
+                <div>
+                    <button id="btnSync" class="btn-pdf" onclick="sincronizar()" title="Sincronizar datos">🔄</button>
+                    <button id="btnPdf" class="btn-pdf" style="display:none;" onclick="exportarPDF()">📥 EXPORTAR PDF</button>
+                    <button id="btnInforme" class="btn-pdf" style="display:none; background: var(--accent);" onclick="generarInformeFisioterapeutico()">📋 INFORME FISIOTERAPÉUTICO</button>
+                </div>
+            </div>
+            <div id="historial"></div>
+        </main>
+    </div>
+
+    <!-- Modal Editor de Notas -->
+    <div id="modalNotas" class="modal">
+        <div class="modal-content" style="max-width: 900px; max-height: 90vh;">
+            <div class="modal-header">
+                <span class="close" onclick="cerrarModalNotas()">&times;</span>
+                <h2>📝 Editor de Notas</h2>
+            </div>
+            <div style="padding: 20px;">
+                <textarea id="editor-notas" rows="20" style="width: 100%; padding: 15px; border: 1.5px solid #e0e6ed; border-radius: 8px; font-size: 1rem; line-height: 1.6; font-family: 'Segoe UI', sans-serif; resize: vertical;" placeholder="Escribe las notas aquí..."></textarea>
+                <div style="margin-top: 20px; text-align: right;">
+                    <button onclick="cerrarModalNotas()" style="padding: 12px 24px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: pointer; margin-right: 10px; font-weight: 600;">CANCELAR</button>
+                    <button onclick="guardarNotasModal()" style="padding: 12px 24px; background: var(--blue); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">✅ GUARDAR NOTAS</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Generar Ejercicios PDF -->
 
             <div id="admin-panel" class="panel" style="display:none; border:2px solid var(--admin);">
                 <h3 style="color:var(--admin)">🔑 Nuevo Usuario</h3>
@@ -311,6 +352,38 @@
     let selectedDni = "";
     let currentDate = new Date();
     let selectedDate = null;
+
+    // ============================================
+    // MODAL DE NOTAS
+    // ============================================
+    
+    function abrirModalNotas() {
+        const notasActuales = document.getElementById('notas').value;
+        document.getElementById('editor-notas').value = notasActuales;
+        document.getElementById('modalNotas').style.display = 'block';
+    }
+    
+    function cerrarModalNotas() {
+        document.getElementById('modalNotas').style.display = 'none';
+    }
+    
+    function guardarNotasModal() {
+        const notasEditadas = document.getElementById('editor-notas').value;
+        document.getElementById('notas').value = notasEditadas;
+        
+        // Actualizar preview
+        const preview = document.getElementById('preview-notas');
+        if (notasEditadas.trim()) {
+            preview.innerHTML = notasEditadas.substring(0, 200) + (notasEditadas.length > 200 ? '...' : '');
+            preview.style.color = '#333';
+        } else {
+            preview.innerHTML = '<em>Haz clic en "ABRIR EDITOR DE NOTAS" para escribir...</em>';
+            preview.style.color = '#666';
+        }
+        
+        cerrarModalNotas();
+        mostrarNotificacion('✅ Notas guardadas en el editor');
+    }
 
     // Función para formatear fechas (tanto nuevas como antiguas)
     function formatearFecha(fechaStr) {
@@ -863,6 +936,11 @@ PLAN DE INTERVENCIÓN:
 - Tratamiento propuesto:
 - Frecuencia:
 - Pronóstico:`;
+                
+                // Actualizar preview también
+                const preview = document.getElementById('preview-notas');
+                preview.innerHTML = notasField.value.substring(0, 200) + '...';
+                preview.style.color = '#333';
             }
         } else {
             el.style.background = 'var(--blue)';
@@ -876,6 +954,13 @@ PLAN DE INTERVENCIÓN:
         document.getElementById('dni').value = "";
         document.getElementById('paciente').value = "";
         document.getElementById('notas').value = "";
+        document.getElementById('editor-notas').value = "";
+        
+        // Limpiar preview
+        const preview = document.getElementById('preview-notas');
+        preview.innerHTML = '<em>Haz clic en "ABRIR EDITOR DE NOTAS" para escribir...</em>';
+        preview.style.color = '#666';
+        
         document.querySelectorAll('.cat-btn').forEach((b, i) => {
             if(i === 0) b.classList.add('active');
             else b.classList.remove('active');
