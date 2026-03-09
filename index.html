@@ -805,11 +805,11 @@
         document.getElementById('titulo-historial').innerText = "📋 Historial: " + (filtrados[0]?.paciente || "Sin paciente");
         
         if(filtrados.length === 0) {
-            document.getElementById('historial-body').innerHTML = '<div style="text-align:center; padding:60px 20px; color:#95a5a6;"><h3>📋 Sin registros</h3><p>No hay sesiones previas para este paciente</p></div>';
+            document.getElementById('historial').innerHTML = '<div style="text-align:center; padding:60px 20px; color:#95a5a6;"><h3>📋 Sin registros</h3><p>No hay sesiones previas para este paciente</p></div>';
             return;
         }
 
-        document.getElementById('historial-body').innerHTML = filtrados.map((s, idx) => {
+        document.getElementById('historial').innerHTML = filtrados.map((s, idx) => {
             // Usar el campo tipo_atencion guardado, con fallback para datos antiguos
             let tipoAtencion = s.tipo_atencion;
             
@@ -898,7 +898,7 @@
             // Insertar plantilla de evaluación según modelo APTA
             const notasField = document.getElementById('notas');
             if (!notasField.value.trim()) { // Solo si está vacío
-                notasField.value = `ANTECEDENTES:
+                const plantilla = `ANTECEDENTES:
 - Motivo de consulta:
 - Historia de la condición actual:
 - Historia médica relevante:
@@ -937,9 +937,12 @@ PLAN DE INTERVENCIÓN:
 - Frecuencia:
 - Pronóstico:`;
                 
+                notasField.value = plantilla;
+                document.getElementById('editor-notas').value = plantilla; // También actualizar el editor
+                
                 // Actualizar preview también
                 const preview = document.getElementById('preview-notas');
-                preview.innerHTML = notasField.value.substring(0, 200) + '...';
+                preview.innerHTML = plantilla.substring(0, 200) + '...';
                 preview.style.color = '#333';
             }
         } else {
@@ -967,11 +970,26 @@ PLAN DE INTERVENCIÓN:
         });
         document.getElementById('categoria').value = "Fisioterapia Traumatológica";
         
-        // Resetear a Evaluación al limpiar
+        // Resetear a Evaluación al limpiar SIN insertar plantilla
+        document.querySelectorAll('.tipo-atencion-btn').forEach(b => {
+            b.classList.remove('active');
+            if (b.dataset.tipo === 'evaluacion') {
+                b.style.background = 'white';
+                b.style.color = 'var(--accent)';
+            } else {
+                b.style.background = 'white';
+                b.style.color = 'var(--blue)';
+            }
+        });
+        
         const btnEvaluacion = document.querySelector('[data-tipo="evaluacion"]');
         if (btnEvaluacion) {
-            setTipoAtencion(btnEvaluacion, 'evaluacion');
+            btnEvaluacion.classList.add('active');
+            btnEvaluacion.style.background = 'var(--accent)';
+            btnEvaluacion.style.color = 'white';
         }
+        
+        document.getElementById('tipo-atencion').value = 'evaluacion';
     }
 
     function toggleAdmin() {
