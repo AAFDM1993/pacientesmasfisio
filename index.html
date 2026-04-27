@@ -279,10 +279,23 @@
 
             <div class="panel">
                 <h3>👥 Buscador de Pacientes</h3>
-                <input type="text" placeholder="🔍 Buscar por nombre o DNI..." onkeyup="renderLista(this.value)">
+                <input type="text" placeholder="🔍 Buscar por nombre o DNI..." id="inputBuscador" onkeyup="debounceBuscar(this.value)">
                 <div id="listaPacientes" style="max-height: 250px; overflow-y: auto; margin-top:10px;"></div>
                 <button id="btnAdmin" class="btn-save" onclick="toggleAdmin()" style="display:none; margin-top:20px; background:var(--admin); width:100%;">⚙️ PANEL ADMIN</button>
                 <button class="btn-save" onclick="abrirModalEjercicios()" style="margin-top:10px; background:var(--accent); width:100%;">💪 GENERAR EJERCICIOS PDF</button>
+            </div>
+
+            <div id="admin-panel" class="panel" style="display:none; border:2px solid var(--admin);">
+                <h3 style="color:var(--admin)">🔑 Nuevo Usuario</h3>
+                <input type="text" id="adm-nombre" placeholder="Nombre completo" style="margin-bottom:10px;">
+                <input type="text" id="adm-colegiatura" placeholder="Colegiatura CTMP (ej: CTMP 12345)" style="margin-bottom:10px;">
+                <select id="adm-rol" style="margin-bottom:10px;">
+                    <option value="profesional">Profesional</option>
+                    <option value="admin">Administrador</option>
+                </select>
+                <input type="text" id="adm-user" placeholder="Usuario" style="margin-bottom:10px;">
+                <input type="password" id="adm-pass" placeholder="Contraseña" style="margin-bottom:10px;">
+                <button class="btn-save" style="background:var(--admin); width:100%;" onclick="crearUsuario()">CREAR USUARIO</button>
             </div>
         </aside>
 
@@ -316,35 +329,6 @@
         </div>
     </div>
 
-    <!-- Modal Generar Ejercicios PDF -->
-
-            <div id="admin-panel" class="panel" style="display:none; border:2px solid var(--admin);">
-                <h3 style="color:var(--admin)">🔑 Nuevo Usuario</h3>
-                <input type="text" id="adm-nombre" placeholder="Nombre completo" style="margin-bottom:10px;">
-                <input type="text" id="adm-colegiatura" placeholder="Colegiatura CTMP (ej: CTMP 12345)" style="margin-bottom:10px;">
-                <select id="adm-rol" style="margin-bottom:10px;">
-                    <option value="profesional">Profesional</option>
-                    <option value="admin">Administrador</option>
-                </select>
-                <input type="text" id="adm-user" placeholder="Usuario" style="margin-bottom:10px;">
-                <input type="password" id="adm-pass" placeholder="Contraseña" style="margin-bottom:10px;">
-                <button class="btn-save" style="background:var(--admin); width:100%;" onclick="crearUsuario()">CREAR USUARIO</button>
-            </div>
-        </aside>
-
-        <main class="panel">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 10px;">
-                <h2 id="titulo-historial" style="margin:0;">📋 Ficha Clínica</h2>
-                <div>
-                    <button id="btnSync" class="btn-pdf" onclick="sincronizar()" title="Sincronizar datos">🔄</button>
-                    <button id="btnPdf" class="btn-pdf" style="display:none;" onclick="exportarPDF()">📥 EXPORTAR PDF</button>
-                    <button id="btnInforme" class="btn-pdf" style="display:none; background: var(--accent);" onclick="generarInformeFisioterapeutico()">📋 INFORME FISIOTERAPÉUTICO</button>
-                </div>
-            </div>
-            <div id="historial-body" style="margin-top:20px;"></div>
-        </main>
-    </div>
-
 <script>
     const CONFIG = {
         webAppUrl: 'https://script.google.com/macros/s/AKfycbwn3aGXD3c_eS7Y3k2g8y9lpsAwISbAsC7HcYEU2byFIq4FmXKam7lXwZKdpFRY-8Ar/exec'
@@ -355,6 +339,14 @@
     let selectedDni = "";
     let currentDate = new Date();
     let selectedDate = null;
+    let historialPage = 0;
+    const HISTORIAL_PAGE_SIZE = 10;
+    let _buscarTimer = null;
+
+    function debounceBuscar(val) {
+        clearTimeout(_buscarTimer);
+        _buscarTimer = setTimeout(() => renderLista(val), 250);
+    }
 
     // ============================================
     // MODAL DE NOTAS
@@ -479,6 +471,7 @@
             renderLista();
             renderCalendar();
             restaurarEstadoCalendar(); // Restaurar estado del calendario
+            mostrarCitasHoy(); // Mostrar alerta de citas del día
         } else {
             document.getElementById('error-msg').style.display = 'block';
             setTimeout(() => {
@@ -613,7 +606,7 @@
                 db.pacientes = [...db.pacientes, nuevaSesion];
                 
                 // Actualizar historial inmediatamente
-                verHistorial(dniInput);
+                verHistorial(dniInput, historialPage);
                 
                 // Limpiar notas
                 document.getElementById('notas').value = "";
@@ -630,12 +623,12 @@
                 if (totalAtenciones >= 1) {
                     // Ya tiene evaluación, siguiente es sesión
                     if (btnSesion) {
-                        setTipoAtencion(btnSesion, 'sesion');
+                        setTipoAtencionSilencioso(btnSesion, 'sesion');
                     }
                 } else {
                     // Primer paciente, mantener en evaluación
                     if (btnEvaluacion) {
-                        setTipoAtencion(btnEvaluacion, 'evaluacion');
+                        setTipoAtencionSilencioso(btnEvaluacion, 'evaluacion');
                     }
                 }
                 
@@ -683,7 +676,7 @@
                 db.pacientes = db.pacientes.filter(p => p.id !== id);
                 
                 // Actualizar historial inmediatamente
-                verHistorial(selectedDni);
+                verHistorial(selectedDni, 0);
                 
                 showLoad(false);
                 mostrarNotificacion('✅ Sesión eliminada');
@@ -789,11 +782,12 @@
     function seleccionar(d, n) {
         document.getElementById('dni').value = d;
         document.getElementById('paciente').value = n;
-        verHistorial(d);
+        verHistorial(d, 0);
     }
 
-    function verHistorial(d) {
+    function verHistorial(d, page = 0) {
         selectedDni = String(d || '');
+        historialPage = page;
         // Filtrar y ordenar cronológicamente (más antigua primero)
         const todosPaciente = db.pacientes.filter(x => String(x.dni || '') === selectedDni);
         
@@ -812,7 +806,13 @@
             return;
         }
 
-        document.getElementById('historial').innerHTML = filtrados.map((s, idx) => {
+        // Paginación
+        const totalPaginas = Math.ceil(filtrados.length / HISTORIAL_PAGE_SIZE);
+        const inicio = page * HISTORIAL_PAGE_SIZE;
+        const fin = inicio + HISTORIAL_PAGE_SIZE;
+        const pagina = filtrados.slice(inicio, fin);
+
+        const cards = pagina.map((s, idx) => {
             // Usar el campo tipo_atencion guardado, con fallback para datos antiguos
             let tipoAtencion = s.tipo_atencion;
             
@@ -861,7 +861,27 @@
                     <p style="margin:0; line-height:1.6; white-space: pre-wrap;">${s.notas}</p>
                 </div>
             </div>
-        `}).join('');
+        `;
+        }).join('');
+
+        // Controles de paginación
+        let paginacion = '';
+        if (totalPaginas > 1) {
+            paginacion = `<div style="display:flex; justify-content:center; align-items:center; gap:10px; margin-top:15px; padding-top:15px; border-top:1px solid #f0f2f5;">
+                <button onclick="verHistorial('${selectedDni}', ${page - 1})" ${page === 0 ? 'disabled' : ''} style="padding:8px 16px; border:1.5px solid #e0e6ed; border-radius:6px; background:white; cursor:pointer; ${page === 0 ? 'opacity:0.4;' : ''}">◀ Anterior</button>
+                <span style="color:var(--gray); font-size:0.9rem;">Página ${page + 1} de ${totalPaginas} <small>(${filtrados.length} sesiones)</small></span>
+                <button onclick="verHistorial('${selectedDni}', ${page + 1})" ${page >= totalPaginas - 1 ? 'disabled' : ''} style="padding:8px 16px; border:1.5px solid #e0e6ed; border-radius:6px; background:white; cursor:pointer; ${page >= totalPaginas - 1 ? 'opacity:0.4;' : ''}">Siguiente ▶</button>
+            </div>`;
+        }
+
+        document.getElementById('historial').innerHTML = cards + paginacion;
+
+        // Ajustar tipo de atención por defecto según si ya tiene evaluación
+        const tieneEvaluacion = todosPaciente.some(x => x.tipo_atencion === 'evaluacion' || todosPaciente.indexOf(x) === 0);
+        if (tieneEvaluacion && todosPaciente.length > 0) {
+            const btnSesion = document.querySelector('[data-tipo="sesion"]');
+            if (btnSesion) setTipoAtencionSilencioso(btnSesion, 'sesion');
+        }
     }
 
     function autoBuscar(val) {
@@ -869,7 +889,7 @@
         const p = db.pacientes.find(x => String(x.dni || '') === valTrimmed);
         if(p) { 
             document.getElementById('paciente').value = p.paciente; 
-            verHistorial(valTrimmed); 
+            verHistorial(valTrimmed, 0); 
         }
     }
 
@@ -956,6 +976,19 @@ PLAN DE INTERVENCIÓN:
         document.getElementById('tipo-atencion').value = tipo;
     }
 
+    // Cambia el botón activo sin insertar plantilla (usado al seleccionar paciente)
+    function setTipoAtencionSilencioso(el, tipo) {
+        document.querySelectorAll('.tipo-atencion-btn').forEach(b => {
+            b.classList.remove('active');
+            b.style.background = 'white';
+            b.style.color = b.dataset.tipo === 'evaluacion' ? 'var(--accent)' : 'var(--blue)';
+        });
+        el.classList.add('active');
+        el.style.background = tipo === 'evaluacion' ? 'var(--accent)' : 'var(--blue)';
+        el.style.color = 'white';
+        document.getElementById('tipo-atencion').value = tipo;
+    }
+
     function limpiarCampos() {
         document.getElementById('dni').value = "";
         document.getElementById('paciente').value = "";
@@ -973,26 +1006,16 @@ PLAN DE INTERVENCIÓN:
         });
         document.getElementById('categoria').value = "Fisioterapia Traumatológica";
         
-        // Resetear a Evaluación al limpiar SIN insertar plantilla
-        document.querySelectorAll('.tipo-atencion-btn').forEach(b => {
-            b.classList.remove('active');
-            if (b.dataset.tipo === 'evaluacion') {
-                b.style.background = 'white';
-                b.style.color = 'var(--accent)';
-            } else {
-                b.style.background = 'white';
-                b.style.color = 'var(--blue)';
-            }
-        });
-        
+        // Resetear a Evaluación al limpiar (sin insertar plantilla)
         const btnEvaluacion = document.querySelector('[data-tipo="evaluacion"]');
-        if (btnEvaluacion) {
-            btnEvaluacion.classList.add('active');
-            btnEvaluacion.style.background = 'var(--accent)';
-            btnEvaluacion.style.color = 'white';
-        }
+        if (btnEvaluacion) setTipoAtencionSilencioso(btnEvaluacion, 'evaluacion');
         
-        document.getElementById('tipo-atencion').value = 'evaluacion';
+        selectedDni = "";
+        historialPage = 0;
+        document.getElementById('historial').innerHTML = '';
+        document.getElementById('titulo-historial').innerText = '📋 Ficha Clínica';
+        document.getElementById('btnPdf').style.display = 'none';
+        document.getElementById('btnInforme').style.display = 'none';
     }
 
     function toggleAdmin() {
@@ -1015,7 +1038,7 @@ PLAN DE INTERVENCIÓN:
         mostrarNotificacion('🔄 Sincronizando...');
         cargarDatos(false).then(() => {
             if (selectedDni) {
-                verHistorial(selectedDni);
+                verHistorial(selectedDni, historialPage);
             }
             renderLista();
         });
@@ -1243,14 +1266,11 @@ PLAN DE INTERVENCIÓN:
 
     // Cerrar modal al hacer clic fuera
     window.onclick = function(event) {
-        const modalPassword = document.getElementById('modalPassword');
-        const modalCita = document.getElementById('modalCita');
-        if (event.target == modalPassword) {
-            cerrarModalPassword();
-        }
-        if (event.target == modalCita) {
-            cerrarModalCita();
-        }
+        const modales = ['modalPassword', 'modalCita', 'modalNotas', 'modalEjercicios'];
+        modales.forEach(id => {
+            const modal = document.getElementById(id);
+            if (event.target == modal) modal.style.display = 'none';
+        });
     }
 
     // ============================================
@@ -1828,6 +1848,44 @@ PLAN DE INTERVENCIÓN:
         window.URL.revokeObjectURL(url);
         
         mostrarNotificacion('📥 HTML Descargado - Ábrelo y presiona Ctrl+P para imprimir/guardar como PDF');
+    }
+
+    // ============================================
+    // RECORDATORIO DE CITAS DEL DÍA
+    // ============================================
+    
+    function mostrarCitasHoy() {
+        const hoy = new Date();
+        const dateStr = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+        const citasHoy = db.citas.filter(c => c.fecha === dateStr).sort((a, b) => a.hora.localeCompare(b.hora));
+        
+        if (citasHoy.length === 0) return;
+        
+        const notif = document.createElement('div');
+        notif.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--blue);color:white;padding:15px 25px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.2);z-index:10001;max-width:400px;text-align:center;cursor:pointer;';
+        notif.innerHTML = `<strong>📅 Tienes ${citasHoy.length} cita${citasHoy.length > 1 ? 's' : ''} hoy</strong><br><small>${citasHoy.map(c => `${c.hora} - ${c.paciente_nombre}`).join(' | ')}</small>`;
+        notif.onclick = () => {
+            document.body.removeChild(notif);
+            selectedDate = dateStr;
+            renderCalendar();
+            mostrarCitasDia(dateStr);
+            // Expandir calendario si está cerrado
+            const content = document.getElementById('calendar-content');
+            const btn = document.getElementById('calendar-toggle-btn');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                btn.innerText = '▼';
+                localStorage.setItem('calendarExpanded', 'true');
+            }
+        };
+        document.body.appendChild(notif);
+        setTimeout(() => {
+            if (document.body.contains(notif)) {
+                notif.style.transition = 'opacity 0.5s';
+                notif.style.opacity = '0';
+                setTimeout(() => { if (document.body.contains(notif)) document.body.removeChild(notif); }, 500);
+            }
+        }, 6000);
     }
 
     window.onload = init;
