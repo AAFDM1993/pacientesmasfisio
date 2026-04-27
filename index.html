@@ -552,6 +552,16 @@
     }
 
     async function guardar() {
+        // Sincronizar el editor de notas al campo oculto antes de validar
+        const editorVal = document.getElementById('editor-notas').value;
+        if (editorVal.trim()) {
+            document.getElementById('notas').value = editorVal;
+            // Actualizar preview también
+            const preview = document.getElementById('preview-notas');
+            preview.innerHTML = editorVal.substring(0, 200) + (editorVal.length > 200 ? '...' : '');
+            preview.style.color = '#333';
+        }
+
         const dniInput = document.getElementById('dni').value.trim();
         const paciente = document.getElementById('paciente').value.trim();
         const notas = document.getElementById('notas').value.trim();
@@ -610,6 +620,10 @@
                 
                 // Limpiar notas
                 document.getElementById('notas').value = "";
+                document.getElementById('editor-notas').value = "";
+                const preview = document.getElementById('preview-notas');
+                preview.innerHTML = '<em>Haz clic en "ABRIR EDITOR DE NOTAS" para escribir...</em>';
+                preview.style.color = '#666';
                 
                 // Determinar qué tipo de atención seleccionar para la próxima
                 // Contar cuántas atenciones tiene este paciente ahora
